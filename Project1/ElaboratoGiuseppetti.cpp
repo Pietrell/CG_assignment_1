@@ -89,8 +89,8 @@ void costruisciAereo(Figura* fig, vec4 color) {
 
 	fig->Model = mat4(1.0);
 	fig->Model = translate(fig->Model, vec3(w/2, h/2, 0.0));
+	fig->Model = rotate(fig->Model, radians(5.0), vec3(0.0,0.0,1.0));
 	fig->Model = scale(fig->Model, vec3(w/5, h/5, 1.0));
-	
 }
 
 
@@ -124,6 +124,29 @@ void drawScene(void)
 
 }
 
+void modifyModelMatrix(Figura* fig, glm::vec3 translation_vector, glm::vec3 rotation_vector, GLfloat angle, GLfloat scale_factor)
+{
+	//ricordare che mat4(1) costruisce una matrice identità di ordine 4
+	mat4 traslation = glm::translate(glm::mat4(1), translation_vector);
+	mat4 scale = glm::scale(glm::mat4(1), glm::vec3(scale_factor, scale_factor, scale_factor));
+	mat4 rotation = glm::rotate(glm::mat4(1), angle, rotation_vector);
+
+	//Modifica la matrice di Modellazione dell'oggetto della scena selezionato postmolitplicando per le matrici scale*rotarion*traslation
+
+	fig->Model = fig->Model * scale * rotation * traslation;
+
+	
+
+}
+
+void seguiMouse(int x, int y) {
+	vec2 pos = Aereo.vertex[0];
+	float angle_ = atan2(pos.y - y, pos.x - x);
+	
+	modifyModelMatrix(&Aereo, vec3(1), vec3(1), angle_, 1);
+
+}
+
 int main(int argc, char* argv[])
 {
 	glutInit(&argc, argv);
@@ -138,6 +161,7 @@ int main(int argc, char* argv[])
 	//gestione animazione
 	//glutMouseFunc(onMouse);
 	//glutKeyboardFunc(mykeyboard);
+	glutPassiveMotionFunc(seguiMouse);
 	glewExperimental = GL_TRUE;
 	glewInit();
 	INIT_SHADER();

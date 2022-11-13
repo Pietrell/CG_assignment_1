@@ -14,9 +14,9 @@ typedef struct {
 	vector<vec3> Tangent;
 	vector<vec4> colorVertex;
 	vector<int> index;
+	vector<vec2> boudLimit;
 	// Numero vertici
 	int nv;
 	//Matrice di Modellazione: Traslazione*Rotazione*Scala
 	mat4 Model;
-	string name;
 } Figura;
