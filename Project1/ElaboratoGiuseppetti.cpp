@@ -1,4 +1,4 @@
-﻿
+﻿/*ELABORATO N.1 DIEGO GIUSEPPETTI*/
 #include "ShaderMaker.h"
 #include "Figura.h"
 #include "creaVAO.h"
@@ -6,38 +6,32 @@
 
 #pragma region constant
 #define  PI   3.14159265358979323846
-
-
 const float w = 1280.0;
 const float h = 720.0;
 #pragma endregion
 
-#pragma region Variabili
+#pragma region Variabili_globali
 
 
 //Inizializzazione parametri Tes, Bias, Cont per la modifica delle derivate agli estremi
 float Tens = 0.0, Bias = 0.0, Cont = 0.0;  //Questa inizializzazione 'rappresenta le derivate come semplice rapporto incrementale
 static unsigned int programId;
-mat4 Projection, InvProjection;
+mat4 Projection;
 GLuint MatProj, MatModel;
 unsigned int loctime, locres, locmouse; 
+vec4 pos;
 vec2 res;
-Figura Aereo, AereoPol;
+Figura Aereo, Sfondo;
+vector<Figura> Nemici, proiettili;
 float angleO;
 
 #pragma endregion
 
-
-
-
 #pragma region INIT
 
 void INIT_VAO(void)
-{
-	//definisco matrici di trasformazione comuni a tutti gli elementi
-		
+{			
 	Projection = ortho(0.0f, w, 0.0f, h);
-	InvProjection = inverse(Projection);
 	//prendo da shader
 	MatProj = glGetUniformLocation(programId, "Projection");
 	MatModel = glGetUniformLocation(programId, "Model");
@@ -49,17 +43,23 @@ void INIT_VAO(void)
 void INIT_SHADER(void)
 {
 	GLenum ErrorCheckValue = glGetError();
-
 	char* vertexShader = (char*)"vertexShader_M.glsl";
 	char* fragmentShader = (char*)"fragmentShader_M.glsl";
-
 	programId = ShaderMaker::createProgram(vertexShader, fragmentShader);
 	glUseProgram(programId);
 }
 #pragma endregion
 
-
 #pragma region DefinizioneForme
+void costruisciSfondo() {
+	Sfondo.vertex.push_back(vec3(-1.0, -1.0, 0.0));
+	Sfondo.vertex.push_back(vec3(1.0, -1.0, 0.0));
+	Sfondo.vertex.push_back(vec3(1.0, 1.0, 0.0));
+
+	Sfondo.vertex.push_back(vec3(1.0, 1.0, 0.0));
+	Sfondo.vertex.push_back(vec3(-1.0, 1.0, 0.0));
+	Sfondo.vertex.push_back(vec3(-1.0, -1.0, 0.0));
+}
 
 void costruisciAereo(Figura* fig, vec4 color) {
 
@@ -93,26 +93,46 @@ void costruisciAereo(Figura* fig, vec4 color) {
 	
 }
 
+void costruisciProiettile(Figura* fig, vec4 color) {
+	int i;
+	float stepA = (2 * PI) / fig->nv;
+	float t;
+
+
+	fig->vertex.push_back(vec3(0.0, 0.0, 0.0));
+	fig->colorVertex.push_back(color);
+
+	for (i = 0; i <= fig->nv/2; i++)
+	{
+		t = (float)i * stepA;
+		fig->vertex.push_back(vec3(cos(t), sin(t), 0.0));		
+		fig->colorVertex.push_back(color);
+	}
+}
 
 #pragma endregion
 
 void drawScene(void)
 {
-	glClearColor(0.0, 0.0, 0.0, 0.5);
+	glClearColor(0.0, 0.0, 0.0, 0.0);
 	glClear(GL_COLOR_BUFFER_BIT);
 	float time = glutGet(GLUT_ELAPSED_TIME) / 1000.0f;
-	vec2 resolution = vec2((float)w, (float)h);
+	
 	glUseProgram(programId);
 	glUniformMatrix4fv(MatProj, 1, GL_FALSE, value_ptr(Projection));	
-	glUniform2f(locres, resolution.x, resolution.y);
+	glUniform2f(locres, w, h );
 
-	vec4 color = vec4(1.0,1.0,0.0,1.0);
-	costruisciAereo(&Aereo,color);
+	costruisciSfondo();
+	crea_VAO_Static(&Sfondo);
+
+
+	costruisciAereo(&Aereo, vec4(1.0, 1.0, 0.0, 1.0));
 	Aereo.Model = translate(Aereo.Model, vec3(w / 2, h / 2, 0.0));
 	Aereo.Model = rotate(Aereo.Model, angleO, vec3(0.0, 0.0, 1.0));
 	Aereo.Model = scale(Aereo.Model, vec3(w / 5, h / 5, 1.0));
 	//costruisci_formaHermite(color, &Aereo, &AereoPol);	
 	crea_VAO_Static(&Aereo);
+
 
 
 	
@@ -143,16 +163,24 @@ void modifyModelMatrix(Figura* fig, glm::vec3 translation_vector, glm::vec3 rota
 }
 
 void seguiMouse(int x, int y) {
-	vec4 pos = Projection*vec4(x, y, 0.0, 1.0) ;
-	pos.y *= -1;
-	//pos.x -= 1;
+	pos = Projection * vec4(x, y, 0.0, 1.0); //trasformo posizione del mouse in coordinate locali
+	pos.y *= -1; //per qualche motivo y invertita
 	printf("%f, %f \n", pos.x, pos.y);
-	
-	 angleO = atan2(pos.y,pos.x);
-	 angleO -= radians(90.0);
-	
-	//modifyModelMatrix(&Aereo, vec3(0.0), vec3(0.0,0.0,1.0), angle_, 0);
-	 glutPostRedisplay();
+	angleO = atan2(pos.y, pos.x);
+	angleO -= radians(90.0);//offset di rotazione
+	glutPostRedisplay();
+}
+void mykeyboard( unsigned char c, int one, int two) {
+	switch (c)
+	{
+	case ' ':
+
+
+		break;
+	default:
+		break;
+	}
+
 }
 
 int main(int argc, char* argv[])
@@ -166,17 +194,19 @@ int main(int argc, char* argv[])
 	glutInitWindowPosition(100, 100);
 	glutCreateWindow("Elaborato Giuseppetti");
 	glutDisplayFunc(drawScene);
+
 	//gestione animazione
-	//glutMouseFunc(onMouse);
-	//glutKeyboardFunc(mykeyboard);
-	glutPassiveMotionFunc(seguiMouse);
+	glutKeyboardFunc(mykeyboard);
+
+
+	glutPassiveMotionFunc(seguiMouse);//chiama funzione per tutto il tempo in cui il mouse e sopra la finestra
 	glewExperimental = GL_TRUE;
 	glewInit();
 	INIT_SHADER();
 	INIT_VAO();
 	glEnable(GL_BLEND);
 	glBlendFunc(GL_SRC_ALPHA, GL_ONE_MINUS_SRC_ALPHA);
-	//glutMotionFunc(mouseMotion);
+	
 	glViewport(0, 0, w, h);
 	glutMainLoop();
 }
