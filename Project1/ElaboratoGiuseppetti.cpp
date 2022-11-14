@@ -18,11 +18,12 @@ const float h = 720.0;
 //Inizializzazione parametri Tes, Bias, Cont per la modifica delle derivate agli estremi
 float Tens = 0.0, Bias = 0.0, Cont = 0.0;  //Questa inizializzazione 'rappresenta le derivate come semplice rapporto incrementale
 static unsigned int programId;
-mat4 Projection;
+mat4 Projection, InvProjection;
 GLuint MatProj, MatModel;
 unsigned int loctime, locres, locmouse; 
 vec2 res;
 Figura Aereo, AereoPol;
+float angleO;
 
 #pragma endregion
 
@@ -36,6 +37,7 @@ void INIT_VAO(void)
 	//definisco matrici di trasformazione comuni a tutti gli elementi
 		
 	Projection = ortho(0.0f, w, 0.0f, h);
+	InvProjection = inverse(Projection);
 	//prendo da shader
 	MatProj = glGetUniformLocation(programId, "Projection");
 	MatModel = glGetUniformLocation(programId, "Model");
@@ -88,9 +90,7 @@ void costruisciAereo(Figura* fig, vec4 color) {
 
 
 	fig->Model = mat4(1.0);
-	fig->Model = translate(fig->Model, vec3(w / 3, h / 3, 0.0));
-	fig->Model = rotate(fig->Model, radians(60.0f), vec3(0.0,0.0,1.0));
-	fig->Model = scale(fig->Model, vec3(w/5, h/5, 1.0));
+	
 }
 
 
@@ -108,6 +108,9 @@ void drawScene(void)
 
 	vec4 color = vec4(1.0,1.0,0.0,1.0);
 	costruisciAereo(&Aereo,color);
+	Aereo.Model = translate(Aereo.Model, vec3(w / 2, h / 2, 0.0));
+	Aereo.Model = rotate(Aereo.Model, angleO, vec3(0.0, 0.0, 1.0));
+	Aereo.Model = scale(Aereo.Model, vec3(w / 5, h / 5, 1.0));
 	//costruisci_formaHermite(color, &Aereo, &AereoPol);	
 	crea_VAO_Static(&Aereo);
 
@@ -140,11 +143,16 @@ void modifyModelMatrix(Figura* fig, glm::vec3 translation_vector, glm::vec3 rota
 }
 
 void seguiMouse(int x, int y) {
-	vec2 pos = Aereo.vertex[0];
-	float angle_ = atan2(pos.y - y, pos.x - x);
+	vec4 pos = Projection*vec4(x, y, 0.0, 1.0) ;
+	pos.y *= -1;
+	//pos.x -= 1;
+	printf("%f, %f \n", pos.x, pos.y);
 	
-	modifyModelMatrix(&Aereo, vec3(0.0), vec3(0.0,0.0,1.0), angle_, 0);
-
+	 angleO = atan2(pos.y,pos.x);
+	 angleO -= radians(90.0);
+	
+	//modifyModelMatrix(&Aereo, vec3(0.0), vec3(0.0,0.0,1.0), angle_, 0);
+	 glutPostRedisplay();
 }
 
 int main(int argc, char* argv[])
