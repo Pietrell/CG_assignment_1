@@ -88,8 +88,8 @@ void costruisciAereo(Figura* fig, vec4 color) {
 
 
 	fig->Model = mat4(1.0);
-	fig->Model = translate(fig->Model, vec3(w/2, h/2, 0.0));
-	fig->Model = rotate(fig->Model, radians(5.0), vec3(0.0,0.0,1.0));
+	fig->Model = translate(fig->Model, vec3(w / 3, h / 3, 0.0));
+	fig->Model = rotate(fig->Model, radians(60.0f), vec3(0.0,0.0,1.0));
 	fig->Model = scale(fig->Model, vec3(w/5, h/5, 1.0));
 }
 
@@ -98,7 +98,7 @@ void costruisciAereo(Figura* fig, vec4 color) {
 
 void drawScene(void)
 {
-	glClearColor(0.2, 0.0, 0.0, 0.5);
+	glClearColor(0.0, 0.0, 0.0, 0.5);
 	glClear(GL_COLOR_BUFFER_BIT);
 	float time = glutGet(GLUT_ELAPSED_TIME) / 1000.0f;
 	vec2 resolution = vec2((float)w, (float)h);
@@ -106,7 +106,7 @@ void drawScene(void)
 	glUniformMatrix4fv(MatProj, 1, GL_FALSE, value_ptr(Projection));	
 	glUniform2f(locres, resolution.x, resolution.y);
 
-	vec4 color = vec4(1.0,1.0,1.0,1.0);
+	vec4 color = vec4(1.0,1.0,0.0,1.0);
 	costruisciAereo(&Aereo,color);
 	//costruisci_formaHermite(color, &Aereo, &AereoPol);	
 	crea_VAO_Static(&Aereo);
@@ -128,8 +128,8 @@ void modifyModelMatrix(Figura* fig, glm::vec3 translation_vector, glm::vec3 rota
 {
 	//ricordare che mat4(1) costruisce una matrice identità di ordine 4
 	mat4 traslation = glm::translate(glm::mat4(1), translation_vector);
-	mat4 scale = glm::scale(glm::mat4(1), glm::vec3(scale_factor, scale_factor, scale_factor));
 	mat4 rotation = glm::rotate(glm::mat4(1), angle, rotation_vector);
+	mat4 scale = glm::scale(glm::mat4(1), glm::vec3(scale_factor, scale_factor, scale_factor));
 
 	//Modifica la matrice di Modellazione dell'oggetto della scena selezionato postmolitplicando per le matrici scale*rotarion*traslation
 
@@ -143,7 +143,7 @@ void seguiMouse(int x, int y) {
 	vec2 pos = Aereo.vertex[0];
 	float angle_ = atan2(pos.y - y, pos.x - x);
 	
-	modifyModelMatrix(&Aereo, vec3(1), vec3(1), angle_, 1);
+	modifyModelMatrix(&Aereo, vec3(0.0), vec3(0.0,0.0,1.0), angle_, 0);
 
 }
 
