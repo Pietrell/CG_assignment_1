@@ -19,4 +19,6 @@ typedef struct {
 	int nv;
 	//Matrice di Modellazione: Traslazione*Rotazione*Scala
 	mat4 Model;
+
+	float AngoloRotazione;
 } Figura;
