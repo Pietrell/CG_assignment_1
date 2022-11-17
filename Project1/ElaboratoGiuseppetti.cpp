@@ -16,11 +16,12 @@ const float h = 720.0;
 //Inizializzazione parametri Tes, Bias, Cont per la modifica delle derivate agli estremi
 float Tens = 0.0, Bias = 0.0, Cont = 0.0;  //Questa inizializzazione 'rappresenta le derivate come semplice rapporto incrementale
 static unsigned int programId;
-mat4 Projection;
+mat4 Projection, eye;
 GLuint MatProj, MatModel;
 unsigned int loctime, locres, locmouse; 
-vec4 pos;
-vec2 res;
+vec4 ViewPort,pos;
+vec3 mousePos, posPrinc;
+
 Figura Aereo, Sfondo, Nemico1, Nemico2, Nemico3;
 vector<Figura*> Scena;
 uint32_t mouse_status = 0;
@@ -99,15 +100,21 @@ void costruisciProiettile(Figura* fig, vec4 color) {
 
 #pragma endregion
 
-float aggiornaAngolo(vec2 fig1, mat4 Mfig1, vec2 fig2, mat4 Mfig2) {
 
 
+float aggiornaAngolo(vec3 fig1, mat4 Mfig1, vec3 fig2, mat4 Mfig2) {
+	//trovo coordinate globali
+	vec4 pos1 = Mfig1 * vec4(fig1, 1.0);
+	vec4 pos2 = Mfig2 * vec4(fig2, 1.0);
 
-	//prodotto scalare tra posizioni (posAereo.x - posNemico.x) + (posAereo.y - posNemico.y)
-	vec4 pos1 =   Mfig1* vec4(fig1.x, fig1.y, 0.0, 1.0);
-	vec4 pos2 =  Mfig2 * vec4(fig2.x, fig2.y, 0.0, 1.0);
+	//creo un nuovo sistema di riferimento in cui fig1 e il centro
+	pos2.x = pos2.x - pos1.x;
+	pos2.y = pos2.y - pos1.y;
 
-	return ( cos(glm::dot(pos1, pos2)) - radians(90.0) );
+	//calcolo angolo tra i due punti dati ponendo x = 0 gradi
+
+	return atan( pos2.y/ pos2.x);
+
 }
 
 #pragma region INIT
@@ -115,11 +122,13 @@ float aggiornaAngolo(vec2 fig1, mat4 Mfig1, vec2 fig2, mat4 Mfig2) {
 void INIT_VAO(void)
 {			
 	Projection = ortho(0.0f, w, 0.0f, h);
-	
+	ViewPort = vec4(0.0f, 0.0f, w, h);
+	posPrinc = vec3(w / 2, h/ 2, 0.0);
+	//eye = mat4(1);
+	//mousePos = vec3(0.0, 0.0, 0.0);
 	//prendo da shader
 
-	costruisciAereo(&Aereo, vec4(1.0, 1.0, 0.0, 1.0));
-	
+	costruisciAereo(&Aereo, vec4(1.0, 1.0, 0.0, 1.0));	
 	crea_VAO_Static(&Aereo);	
 	Scena.push_back(&Aereo);
 
@@ -140,7 +149,6 @@ void INIT_VAO(void)
 
 	MatProj = glGetUniformLocation(programId, "Projection");
 	MatModel = glGetUniformLocation(programId, "Model");
-
 	loctime = glGetUniformLocation(programId, "time");
 	locres = glGetUniformLocation(programId, "res");
 	locmouse = glGetUniformLocation(programId, "mouse");
@@ -179,11 +187,8 @@ void drawScene(void)
 	{
 
 		if(k==0){//aereo bello
-
-
-
 			Scena[k]->Model = mat4(1);
-			Scena[k]->Model = translate(Scena[k]->Model, vec3(w / 2, h / 2, 0.0));
+			Scena[k]->Model = translate(Scena[k]->Model, posPrinc);
 			Scena[k]->Model = rotate(Scena[k]->Model, Scena[k]->AngoloRotazione, vec3(0.0, 0.0, 1.0));
 			Scena[k]->Model = scale(Scena[k]->Model, vec3(w / 7, h / 7, 1.0));
 			glUniformMatrix4fv(MatModel, 1, GL_FALSE, value_ptr(Scena[k]->Model));
@@ -192,8 +197,8 @@ void drawScene(void)
 		}
 		else {
 
+			Scena[k]->AngoloRotazione = aggiornaAngolo(Scena[0]->vertex[0], Scena[0]->Model,Scena[k]->vertex[0], Scena[k]->Model) ;
 			Scena[k]->Model = mat4(1);
-			Scena[k]->AngoloRotazione = aggiornaAngolo(Scena[0]->vertex[0], Scena[0]->Model,Scena[k]->vertex[0], Scena[k]->Model);
 			Scena[k]->Model = translate(Scena[k]->Model, vec3(k*100, k*100, 0.0));
 			Scena[k]->Model = rotate(Scena[k]->Model, Scena[k]->AngoloRotazione, vec3(0.0, 0.0, 1.0));
 			Scena[k]->Model = scale(Scena[k]->Model, vec3(w / 10, h / 10, 1.0));
@@ -232,14 +237,11 @@ void spara() {
 }
 
 void seguiMouse(int x, int y) {
-	cout << "pre calcolo";
-	Aereo.AngoloRotazione = aggiornaAngolo(vec2(x, y), mat4(1), Aereo.vertex[0], Aereo.Model);
-	//pos = Projection * vec4(x, y, 0.0, 1.0); //trasformo posizione del mouse in coordinate locali
-	//pos.y *= -1; //per qualche motivo y invertita
-	////printf("%f, %f \n", pos.x, pos.y);
-	//Aereo.AngoloRotazione = atan2(pos.y, pos.x);
-	//Aereo.AngoloRotazione -= radians(90.0);//offset di rotazione => voglio x=0 come 0 invece di y
-	cout << Aereo.AngoloRotazione;
+
+	
+	mousePos = vec3(x, y, 0.0);
+	Aereo.AngoloRotazione = aggiornaAngolo(mousePos,mat4(1),Aereo.vertex[0],Aereo.Model);
+	
 	glutPostRedisplay();
 }
 
@@ -260,7 +262,37 @@ void onMouseButton(int button, int state, int x, int y)
 
 	glutPostRedisplay();
 }
+void myKeyboard(unsigned char key, int x, int y)
+{
+	{
+		switch (key)
+		{
 
+		case ' ':
+			
+			break;
+
+		case 'w':
+			posPrinc.y +=2;
+			break;
+		case 'a':
+			posPrinc.x-=2;
+			break;
+
+		case 's':
+			posPrinc.y-=2;
+			break;
+		case 'd':
+			posPrinc.x+=2;
+			break;
+
+		
+		default:
+			break;
+		}
+	}
+	glutPostRedisplay();
+}
 
 int main(int argc, char* argv[])
 {
@@ -275,9 +307,8 @@ int main(int argc, char* argv[])
 	glutDisplayFunc(drawScene);
 
 	//gestione animazione
+	glutKeyboardFunc(myKeyboard);
 	glutMouseFunc(onMouseButton);
-
-
 	glutPassiveMotionFunc(seguiMouse);//chiama funzione per tutto il tempo in cui il mouse e sopra la finestra
 	glewExperimental = GL_TRUE;
 	glewInit();
