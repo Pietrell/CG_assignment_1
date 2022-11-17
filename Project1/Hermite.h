@@ -11,7 +11,6 @@
 
 float dx(int i, float* t, float Tens, float Bias, float Cont, Figura* Fig);
 float dy(int i, float* t, float Tens, float Bias, float Cont, Figura* Fig);
-float DX(int i, float* t, Figura* fig);
-float DY(int i, float* t, Figura* fig);
-Figura* InterpolazioneHermite(float* t, Figura* Fig, vec4 color);
-void costruisci_formaHermite(vec4 color, Figura* forma,Figura* poligono);
+
+void InterpolazioneHermite(float* t, Figura* Fig, vec4 color);
+void costruisci_formaHermite(vec4 color, Figura* forma);

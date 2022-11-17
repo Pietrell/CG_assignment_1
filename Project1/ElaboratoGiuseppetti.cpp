@@ -7,6 +7,7 @@
 #define  PI   3.14159265358979323846
 const float w = 1280.0;
 const float h = 720.0;
+
 #pragma endregion
 
 #pragma region Variabili_globali
@@ -20,10 +21,12 @@ GLuint MatProj, MatModel;
 unsigned int loctime, locres, locmouse; 
 vec4 pos;
 vec2 res;
-Figura Aereo, Sfondo;
-vector<Figura> Scena;
-
+Figura Aereo, Sfondo, Nemico1, Nemico2, Nemico3;
+vector<Figura*> Scena;
+uint32_t mouse_status = 0;
 float angleO;
+float modelview[16];
+
 
 #pragma endregion
 
@@ -71,8 +74,9 @@ void costruisciAereo(Figura* fig, vec4 color) {
 	fig->colorVertex.push_back(color);
 
 	fig->nv = fig->vertex.size();
-	fig->AngoloRotazione = 0.0;
-
+	fig->AngoloRotazione = 0.0f;
+	fig->hasHerm = false;
+	costruisci_formaHermite(color, fig);
 
 }
 
@@ -95,11 +99,15 @@ void costruisciProiettile(Figura* fig, vec4 color) {
 
 #pragma endregion
 
-
-void sparaProiettile() {
-
+float aggiornaAngolo(vec2 fig1, mat4 Mfig1, vec2 fig2, mat4 Mfig2) {
 
 
+
+	//prodotto scalare tra posizioni (posAereo.x - posNemico.x) + (posAereo.y - posNemico.y)
+	vec4 pos1 =   Mfig1* vec4(fig1.x, fig1.y, 0.0, 1.0);
+	vec4 pos2 =  Mfig2 * vec4(fig2.x, fig2.y, 0.0, 1.0);
+
+	return ( cos(glm::dot(pos1, pos2)) - radians(90.0) );
 }
 
 #pragma region INIT
@@ -107,16 +115,38 @@ void sparaProiettile() {
 void INIT_VAO(void)
 {			
 	Projection = ortho(0.0f, w, 0.0f, h);
+	
 	//prendo da shader
+
+	costruisciAereo(&Aereo, vec4(1.0, 1.0, 0.0, 1.0));
+	
+	crea_VAO_Static(&Aereo);	
+	Scena.push_back(&Aereo);
+
+	costruisciAereo(&Nemico1, vec4(1.0, 0.0, 0.0, 1.0));
+	
+	crea_VAO_Static(&Nemico1);
+	Scena.push_back(&Nemico1);
+
+	costruisciAereo(&Nemico2, vec4(1.0, 0.0, 0.0, 1.0));
+	
+	crea_VAO_Static(&Nemico2);
+	Scena.push_back(&Nemico2);
+
+	costruisciAereo(&Nemico3, vec4(1.0, 0.0, 0.0, 1.0));
+	
+	crea_VAO_Hermite(&Nemico3);
+	Scena.push_back(&Nemico3);
+
 	MatProj = glGetUniformLocation(programId, "Projection");
 	MatModel = glGetUniformLocation(programId, "Model");
+
 	loctime = glGetUniformLocation(programId, "time");
 	locres = glGetUniformLocation(programId, "res");
 	locmouse = glGetUniformLocation(programId, "mouse");
 
-	costruisciAereo(&Aereo, vec4(1.0, 1.0, 0.0, 1.0));
-	crea_VAO_Static(&Aereo);	
-	Scena.push_back(Aereo);
+
+
 
 }
 
@@ -148,23 +178,32 @@ void drawScene(void)
 	for (int k = 0; k < Scena.size(); k++)
 	{
 
-		switch (k)
-		{
-		case 0: //aereo bello
-			Scena[k].Model = mat4(1);
-			glUniformMatrix4fv(MatModel, 1, GL_FALSE, value_ptr(Scena[k].Model));
-			Scena[k].Model = translate(Scena[k].Model, vec3(w / 2, h / 2, 0.0));
-			Scena[k].Model = rotate(Scena[k].Model, 0.0f, vec3(0.0, 0.0, 1.0));
-			Scena[k].Model = scale(Scena[k].Model, vec3(w / 5, h / 5, 1.0));
-			glBindVertexArray(Scena[k].VAO);
-			glDrawArrays(GL_TRIANGLE_FAN, 0, Scena[k].nv);
-			break;
+		if(k==0){//aereo bello
 
 
-		default:
-			break;
+
+			Scena[k]->Model = mat4(1);
+			Scena[k]->Model = translate(Scena[k]->Model, vec3(w / 2, h / 2, 0.0));
+			Scena[k]->Model = rotate(Scena[k]->Model, Scena[k]->AngoloRotazione, vec3(0.0, 0.0, 1.0));
+			Scena[k]->Model = scale(Scena[k]->Model, vec3(w / 7, h / 7, 1.0));
+			glUniformMatrix4fv(MatModel, 1, GL_FALSE, value_ptr(Scena[k]->Model));
+			glBindVertexArray(Scena[k]->VAO);
+			glDrawArrays(GL_TRIANGLE_FAN, 0, Scena[k]->nv);
 		}
+		else {
 
+			Scena[k]->Model = mat4(1);
+			Scena[k]->AngoloRotazione = aggiornaAngolo(Scena[0]->vertex[0], Scena[0]->Model,Scena[k]->vertex[0], Scena[k]->Model);
+			Scena[k]->Model = translate(Scena[k]->Model, vec3(k*100, k*100, 0.0));
+			Scena[k]->Model = rotate(Scena[k]->Model, Scena[k]->AngoloRotazione, vec3(0.0, 0.0, 1.0));
+			Scena[k]->Model = scale(Scena[k]->Model, vec3(w / 10, h / 10, 1.0));
+			glUniformMatrix4fv(MatModel, 1, GL_FALSE, value_ptr(Scena[k]->Model));
+			glBindVertexArray(Scena[k]->VAO);
+			if (Scena[k]->hasHerm) {
+				glDrawArrays(GL_LINE_STRIP, 0, Scena[k]->nvHer);
+			}
+			glDrawArrays(GL_LINE_STRIP, 0, Scena[k]->nv);
+		}
 
 		
 		
@@ -184,41 +223,44 @@ void drawScene(void)
 
 }
 
+//prendo angolo tra nemico e personaggio per far si che fi giri verso lui
 
-void aggiornaAngolo(vec2 mouse, Figura* fig) {
-	
-	
 
-	angleO = atan2(pos.y, pos.x);
-	angleO -= radians(90.0);//offset di rotazione
+void spara() {
+	//costruisciProiettile()
+
+}
+
+void seguiMouse(int x, int y) {
+	cout << "pre calcolo";
+	Aereo.AngoloRotazione = aggiornaAngolo(vec2(x, y), mat4(1), Aereo.vertex[0], Aereo.Model);
+	//pos = Projection * vec4(x, y, 0.0, 1.0); //trasformo posizione del mouse in coordinate locali
+	//pos.y *= -1; //per qualche motivo y invertita
+	////printf("%f, %f \n", pos.x, pos.y);
+	//Aereo.AngoloRotazione = atan2(pos.y, pos.x);
+	//Aereo.AngoloRotazione -= radians(90.0);//offset di rotazione => voglio x=0 come 0 invece di y
+	cout << Aereo.AngoloRotazione;
+	glutPostRedisplay();
+}
+
+void onMouseButton(int button, int state, int x, int y)
+{
+	
+	switch (button) {
+	case GLUT_LEFT_BUTTON:      
+		spara();
+		break;
+	case GLUT_MIDDLE_BUTTON:  
+		break;
+	case GLUT_RIGHT_BUTTON:    
+		break;
+	}
+
+	
 
 	glutPostRedisplay();
 }
 
-
-void seguiMouse(int x, int y) {
-	pos = Projection * vec4(x, y, 0.0, 1.0); //trasformo posizione del mouse in coordinate locali
-	pos.y *= -1; //per qualche motivo y invertita
-	//printf("%f, %f \n", pos.x, pos.y);
-	angleO = atan2(pos.y, pos.x);
-	angleO -= radians(90.0);//offset di rotazione
-
-	glutPostRedisplay();	
-}
-
-
-void mykeyboard( unsigned char c, int one, int two) {
-	switch (c)
-	{
-	case ' ':
-
-
-		break;
-	default:
-		break;
-	}
-
-}
 
 int main(int argc, char* argv[])
 {
@@ -233,10 +275,10 @@ int main(int argc, char* argv[])
 	glutDisplayFunc(drawScene);
 
 	//gestione animazione
-	glutKeyboardFunc(mykeyboard);
+	glutMouseFunc(onMouseButton);
 
 
-	glutPassiveMotionFunc(seguiMouse());//chiama funzione per tutto il tempo in cui il mouse e sopra la finestra
+	glutPassiveMotionFunc(seguiMouse);//chiama funzione per tutto il tempo in cui il mouse e sopra la finestra
 	glewExperimental = GL_TRUE;
 	glewInit();
 	INIT_SHADER();

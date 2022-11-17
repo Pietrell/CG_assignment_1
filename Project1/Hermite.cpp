@@ -29,36 +29,11 @@ float dy(int i, float* t, float Tens, float Bias, float Cont, Figura* Fig)
 		return  0.5 * (1 - Tens) * (1 + Bias) * (1 - Cont) * (Fig->vertex.at(i).y - Fig->vertex.at(i - 1).y) / (t[i] - t[i - 1]) + 0.5 * (1 - Tens) * (1 - Bias) * (1 + Cont) * (Fig->vertex.at(i + 1).y - Fig->vertex.at(i).y) / (t[i + 1] - t[i]);
 }
 
-float DX(int i, float* t, Figura* fig)
+
+void InterpolazioneHermite(float* t, Figura* Fig, vec4 color)
 {
-	//Nei vertici di controllo per i quali non sono stati modificati i parametri Tens, Bias, Cont il valore della derivata della componente x della curva � quello originale, altrimenti � quello che � stato modificato nella funzione 
-	//keyboardfunc  in seguito alla modifica dei valori Tens, Bias e Cont.
+
 	
-	if (fig->Derivate.at(i).x == 0)
-		return dx(i, t, 0.0, 0.0, 0.0, fig);
-
-	if (fig->Derivate.at(i).x != 0)
-		return fig->Derivate.at(i).x;
-
-}
-
-float DY(int i, float* t, Figura* fig)
-{
-	// Nei vertici di controllo per i quali non sono stati modificati i parametri Tens, Bias, Cont il valore della derivata della componente y della curva � quello originale, altrimenti � quello che � stato modificato nella funzione
-		//keyboardfunc  in seguito alla modifica dei valori Tens, Bias e Cont.
-
-	if (fig->Derivate.at(i).y == 0)
-		return dy(i, t, 0.0, 0.0, 0.0, fig);
-
-	if (fig->Derivate.at(i).y != 0)
-		return fig->Derivate.at(i).y;
-
-}
-
-Figura* InterpolazioneHermite(float* t, Figura* Fig, vec4 color)
-{
-
-	Figura poligono;
 	float p_t = 0, p_b = 0, p_c = 0, x, y;
 	float passotg = 1.0 / (float)(pval - 1);
 
@@ -68,10 +43,6 @@ Figura* InterpolazioneHermite(float* t, Figura* Fig, vec4 color)
 	//appartiene
 
 
-	poligono.vertex.clear();
-	poligono.colorVertex.clear();
-	poligono.Tangent.clear();
-
 	for (tg = 0; tg <= 1; tg += passotg)
 	{
 		if (tg > t[is + 1]) is++;
@@ -79,30 +50,26 @@ Figura* InterpolazioneHermite(float* t, Figura* Fig, vec4 color)
 		ampiezza = (t[is + 1] - t[is]);
 		tgmapp = (tg - t[is]) / ampiezza;
 
-		x = Fig->vertex[is].x * PHI0(tgmapp) + DX(is, t, Fig) * PHI1(tgmapp) * ampiezza + Fig->vertex[is + 1].x * PSI0(tgmapp) + DX(is + 1, t, Fig) * PSI1(tgmapp) * ampiezza;
-		y = Fig->vertex[is].y * PHI0(tgmapp) + DY(is, t, Fig) * PHI1(tgmapp) * ampiezza + Fig->vertex[is + 1].y * PSI0(tgmapp) + DY(is + 1, t, Fig) * PSI1(tgmapp) * ampiezza;
-		poligono.vertex.push_back(vec3(x, y, 0.0));
-		poligono.colorVertex.push_back(color);
+		x = Fig->vertex[is].x * PHI0(tgmapp) + dx(is, t, p_t, p_b,p_c, Fig) * PHI1(tgmapp) * ampiezza + Fig->vertex[is + 1].x * PSI0(tgmapp) + dx(is + 1, t, p_t, p_b, p_c, Fig) * PSI1(tgmapp) * ampiezza;
+		y = Fig->vertex[is].y * PHI0(tgmapp) + dy(is, t, p_t, p_b, p_c, Fig) * PHI1(tgmapp) * ampiezza + Fig->vertex[is + 1].y * PSI0(tgmapp) + dy(is + 1, t, p_t, p_b, p_c, Fig) * PSI1(tgmapp) * ampiezza;
+		Fig->Hermite.push_back(vec3(x, y, 0.0));
+		Fig->colorHermite.push_back(color);
 	}
-	return &poligono;
+	
 }
 
 
-void costruisci_formaHermite(vec4 color, Figura* forma, Figura* poligono)
+void costruisci_formaHermite(vec4 color, Figura* forma )
 {
-	
-	if (forma->vertex.size() > 1)
-	{
-		t = new float[forma->vertex.size()];
-		int i;
-		float step = 1.0 / (float)(forma->vertex.size() - 1);
+	t = new float[forma->vertex.size()];
+	int i;
+	float step = 1.0 / (float)(forma->vertex.size() - 1);
 
-		for (i = 0; i < forma->vertex.size(); i++) {
-			t[i] = (float)i * step;
-		}		
-		poligono = InterpolazioneHermite(t, forma, color);
-		forma->nv = forma->vertex.size();
+	for (i = 0; i < forma->vertex.size(); i++) {
+		t[i] = (float)i * step;
 	}
-
-
+	InterpolazioneHermite(t, forma, color);
+	forma->hasHerm = true;
+	forma->nvHer = forma->Hermite.size();
+	
 }

@@ -8,17 +8,21 @@ typedef struct {
 	GLuint VBO_Col;
 	GLuint EBO_indici;
 
-	// Vertici	
+	// Vertici	in valori locali
 	vector<vec3> vertex;
-	vector<vec3> Derivate;
-	vector<vec3> Tangent;
 	vector<vec4> colorVertex;
+	vector<vec3> Hermite;
+	vector<vec4> colorHermite;
 	vector<int> index;
 	vector<vec2> boudLimit;
 	// Numero vertici
 	int nv;
+	int nvHer;
+	bool hasHerm;
+
+
+
 	//Matrice di Modellazione: Traslazione*Rotazione*Scala
 	mat4 Model;
-
 	float AngoloRotazione;
 } Figura;
