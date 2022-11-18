@@ -1,6 +1,7 @@
 #pragma once
 #include <iostream>
 #include "Lib.h"
+#include "Collision.h"
 
 typedef struct {
 	GLuint VAO;
@@ -15,12 +16,13 @@ typedef struct {
 	vector<vec4> colorHermite;
 	vector<int> index;
 	vector<vec2> boudLimit;
+
+	vec3 globalPos;
 	// Numero vertici
 	int nv;
 	int nvHer;
-	bool hasHerm;
-
-
+	bool hasHerm,draw, isProjectile;
+	BoundingBox box;
 
 	//Matrice di Modellazione: Traslazione*Rotazione*Scala
 	mat4 Model;

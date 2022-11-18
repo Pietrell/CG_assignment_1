@@ -3,6 +3,7 @@
 #include "Figura.h"
 #include "creaVAO.h"
 #include "Hermite.h"
+#include <math.h>
 #pragma region constant
 #define  PI   3.14159265358979323846
 const float w = 1280.0;
@@ -20,7 +21,7 @@ mat4 Projection, eye;
 GLuint MatProj, MatModel;
 unsigned int loctime, locres, locmouse; 
 vec4 ViewPort,pos;
-vec3 mousePos, posPrinc;
+
 
 Figura Aereo, Sfondo, Nemico1, Nemico2, Nemico3;
 vector<Figura*> Scena;
@@ -77,6 +78,7 @@ void costruisciAereo(Figura* fig, vec4 color) {
 	fig->nv = fig->vertex.size();
 	fig->AngoloRotazione = 0.0f;
 	fig->hasHerm = false;
+	Aereo.draw = true;
 	costruisci_formaHermite(color, fig);
 
 }
@@ -85,7 +87,8 @@ void costruisciProiettile(Figura* fig, vec4 color) {
 	int i;
 	float stepA = (2 * PI) / fig->nv;
 	float t;
-
+	float ymax = 0;
+	float ymin = 0;
 
 	fig->vertex.push_back(vec3(0.0, 0.0, 0.0));
 	fig->colorVertex.push_back(color);
@@ -96,6 +99,34 @@ void costruisciProiettile(Figura* fig, vec4 color) {
 		fig->vertex.push_back(vec3(cos(t), sin(t), 0.0));
 		fig->colorVertex.push_back(color);
 	}
+
+	for (i = 1; i < fig->nv; i++)
+	{
+
+		if (fig->vertici[i].x < xmin)
+			xmin = fig->vertici[i].x;
+	}
+
+	for (i = 1; i < fig->nv; i++)
+	{
+
+		if (fig->vertici[i].x > xmax)
+			xmax = fig->vertici[i].x;
+	}
+	for (i = 1; i < fig->nv; i++)
+	{
+		if (fig->vertici[i].y <= ymin)
+			ymin = fig->vertici[i].y;
+	}
+
+	for (i = 1; i < fig->nv; i++)
+	{
+		if (fig->vertici[i].y > ymax)
+			ymax = fig->vertici[i].y;
+	}
+	fig->box.corner_b_obj = vec4(xmin, ymin, 0.0, 1.0);
+	fig->box.corner_t_obj = vec4(xmax, ymax, 0.0, 1.0);
+
 }
 
 #pragma endregion
@@ -108,12 +139,49 @@ float aggiornaAngolo(vec3 fig1, mat4 Mfig1, vec3 fig2, mat4 Mfig2) {
 	vec4 pos2 = Mfig2 * vec4(fig2, 1.0);
 
 	//creo un nuovo sistema di riferimento in cui fig1 e il centro
-	pos2.x = pos2.x - pos1.x;
-	pos2.y = pos2.y - pos1.y;
+	pos2.x = (pos2.x - pos1.x);
+	pos2.y = (pos2.y - pos1.y);
 
+	//mappo posizione tra -1 e 1
+	
 	//calcolo angolo tra i due punti dati ponendo x = 0 gradi
+	double radian = atan(pos2.y / pos2.x);
+	if (pos2.x >= 0) {
+		 radian += radians(180.0);
+	}
+	return radian - radians(90.0);
 
-	return atan( pos2.y/ pos2.x);
+}
+
+void nextEnemyMov(Figura* enemy, Figura* prin) {
+	//ottengo coordinate finestra
+	vec4 posPr = prin->Model * vec4(prin->vertex[0], 1.0);
+	vec4 posEn = enemy->Model * vec4(enemy->vertex[0], 1.0);
+	posPr.x -= posEn.x;
+	posPr.y -= posEn.y;
+
+
+	/*
+	float anggolollo = enemy->AngoloRotazione ;
+
+	mat4 ruota = translate(mat4(1), vec3(10.0, 0.0, 0.0));;
+	ruota = glm::rotate(mat4(1.0), anggolollo, vec3(0.0, 0.0, 1.0));
+
+	vec4 spos = vec4(1.0,0.0,0.0,1.0) * ruota;
+	posEn = posEn + spos;
+
+	enemy->globalPos = posEn;
+	
+	*/
+	//vec4 posEn = vec4(enemy->globalPos, 1.0);
+	//float ang_ = enemy->AngoloRotazione;
+	
+	posEn.x += posPr.x > 0 ? +2 : -2;
+	posEn.y += posPr.y > 0 ? +2 : -2;
+	
+
+	enemy->globalPos.x = posEn.x;
+	enemy->globalPos.y = posEn.y;
 
 }
 
@@ -123,29 +191,56 @@ void INIT_VAO(void)
 {			
 	Projection = ortho(0.0f, w, 0.0f, h);
 	ViewPort = vec4(0.0f, 0.0f, w, h);
-	posPrinc = vec3(w / 2, h/ 2, 0.0);
+	//posPrinc = vec3(w / 2, h/ 2, 0.0);
 	//eye = mat4(1);
 	//mousePos = vec3(0.0, 0.0, 0.0);
 	//prendo da shader
-
 	costruisciAereo(&Aereo, vec4(1.0, 1.0, 0.0, 1.0));	
-	crea_VAO_Static(&Aereo);	
+	Aereo.globalPos = vec3(w / 2, h / 2, 0.0);
+	
+
+	Aereo.Model = mat4(1);
+	Aereo.Model = translate(Aereo.Model, Aereo.globalPos);
+	Aereo.Model = rotate(Aereo.Model, Aereo.AngoloRotazione, vec3(0.0, 0.0, 1.0));
+	Aereo.Model = scale(Aereo.Model, vec3(w / 7, h / 7, 1.0));
+
+	crea_VAO_Static(&Aereo);
 	Scena.push_back(&Aereo);
 
+
+
+	//primo aereo nemico
 	costruisciAereo(&Nemico1, vec4(1.0, 0.0, 0.0, 1.0));
-	
-	crea_VAO_Static(&Nemico1);
+	Nemico1.globalPos = vec3(rand()%(int)w, rand()%(int)h, 0.0);	
+		
+	Nemico1.Model = mat4(1);
+	Nemico1.Model = translate(Nemico1.Model, Nemico1.globalPos);
+	Nemico1.Model = rotate(Nemico1.Model, 0.0f, vec3(0.0, 0.0, 1.0));
+	Nemico1.Model = scale(Nemico1.Model, vec3(w / 15, h / 15, 1.0));
+
+	crea_VAO_Static(&Nemico1);	
 	Scena.push_back(&Nemico1);
 
 	costruisciAereo(&Nemico2, vec4(1.0, 0.0, 0.0, 1.0));
+	Nemico2.globalPos = vec3(rand() % (int)w, rand() % (int)h, 0.0);
 	
+	Nemico2.Model = mat4(1);
+	Nemico2.Model = translate(Nemico2.Model, Nemico2.globalPos);
+	Nemico2.Model = rotate(Nemico2.Model, 0.0f, vec3(0.0, 0.0, 1.0));
+	Nemico2.Model = scale(Nemico2.Model, vec3(w / 20, h / 20, 1.0));
 	crea_VAO_Static(&Nemico2);
 	Scena.push_back(&Nemico2);
 
 	costruisciAereo(&Nemico3, vec4(1.0, 0.0, 0.0, 1.0));
-	
+	Nemico3.globalPos = vec3(rand() % (int)w, rand() % (int)h, 0.0);
+	Nemico3.draw = true;
+	Nemico3.Model = mat4(1);
+	Nemico3.Model = translate(Nemico3.Model, Nemico3.globalPos);
+	Nemico3.Model = rotate(Nemico3.Model, 0.0f, vec3(0.0, 0.0, 1.0));
+	Nemico3.Model = scale(Nemico3.Model, vec3(w / 20, h / 20, 1.0));
 	crea_VAO_Hermite(&Nemico3);
 	Scena.push_back(&Nemico3);
+
 
 	MatProj = glGetUniformLocation(programId, "Projection");
 	MatModel = glGetUniformLocation(programId, "Model");
@@ -179,16 +274,13 @@ void drawScene(void)
 
 
 	glClearColor(0.0, 0.0, 0.0, 0.0);
-	glClear(GL_COLOR_BUFFER_BIT);
-
-	
+	glClear(GL_COLOR_BUFFER_BIT);	
 
 	for (int k = 0; k < Scena.size(); k++)
 	{
-
 		if(k==0){//aereo bello
 			Scena[k]->Model = mat4(1);
-			Scena[k]->Model = translate(Scena[k]->Model, posPrinc);
+			Scena[k]->Model = translate(Scena[k]->Model, Scena[k]->globalPos);
 			Scena[k]->Model = rotate(Scena[k]->Model, Scena[k]->AngoloRotazione, vec3(0.0, 0.0, 1.0));
 			Scena[k]->Model = scale(Scena[k]->Model, vec3(w / 7, h / 7, 1.0));
 			glUniformMatrix4fv(MatModel, 1, GL_FALSE, value_ptr(Scena[k]->Model));
@@ -197,9 +289,11 @@ void drawScene(void)
 		}
 		else {
 
-			Scena[k]->AngoloRotazione = aggiornaAngolo(Scena[0]->vertex[0], Scena[0]->Model,Scena[k]->vertex[0], Scena[k]->Model) ;
+			Scena[k]->AngoloRotazione = aggiornaAngolo(Scena[0]->vertex[0], Scena[0]->Model, Scena[k]->vertex[0], Scena[k]->Model);			
+			nextEnemyMov(Scena[k], Scena[0]);
+
 			Scena[k]->Model = mat4(1);
-			Scena[k]->Model = translate(Scena[k]->Model, vec3(k*100, k*100, 0.0));
+			Scena[k]->Model = translate(Scena[k]->Model, Scena[k]->globalPos);
 			Scena[k]->Model = rotate(Scena[k]->Model, Scena[k]->AngoloRotazione, vec3(0.0, 0.0, 1.0));
 			Scena[k]->Model = scale(Scena[k]->Model, vec3(w / 10, h / 10, 1.0));
 			glUniformMatrix4fv(MatModel, 1, GL_FALSE, value_ptr(Scena[k]->Model));
@@ -214,15 +308,6 @@ void drawScene(void)
 		
 		glBindVertexArray(0);
 	}
-	//costruisci_formaHermite(color, &Aereo, &AereoPol);	
-	
-	
-	//crea_VAO_Static(&Sfondo);
-	//glBindVertexArray(Sfondo.VAO);
-	//glDrawArrays(GL_TRIANGLES, 0, Aereo.nv);
-	//glBindVertexArray(0);
-	
-
 
 	glutSwapBuffers();
 
@@ -232,17 +317,15 @@ void drawScene(void)
 
 
 void spara() {
-	//costruisciProiettile()
+	
 
 }
 
 void seguiMouse(int x, int y) {
 
+	Aereo.AngoloRotazione = aggiornaAngolo(vec3(x,h-y,0.0), mat4(1), Aereo.vertex[0], Aereo.Model);
 	
-	mousePos = vec3(x, y, 0.0);
-	Aereo.AngoloRotazione = aggiornaAngolo(mousePos,mat4(1),Aereo.vertex[0],Aereo.Model);
 	
-	glutPostRedisplay();
 }
 
 void onMouseButton(int button, int state, int x, int y)
@@ -260,7 +343,7 @@ void onMouseButton(int button, int state, int x, int y)
 
 	
 
-	glutPostRedisplay();
+	
 }
 void myKeyboard(unsigned char key, int x, int y)
 {
@@ -273,17 +356,17 @@ void myKeyboard(unsigned char key, int x, int y)
 			break;
 
 		case 'w':
-			posPrinc.y +=2;
+			Aereo.globalPos.y +=5;
 			break;
 		case 'a':
-			posPrinc.x-=2;
+			Aereo.globalPos.x -=5;
 			break;
 
 		case 's':
-			posPrinc.y-=2;
+			Aereo.globalPos.y -=5;
 			break;
 		case 'd':
-			posPrinc.x+=2;
+			Aereo.globalPos.x +=5;
 			break;
 
 		
@@ -291,7 +374,12 @@ void myKeyboard(unsigned char key, int x, int y)
 			break;
 		}
 	}
+
+}
+void frame(int a) {
+
 	glutPostRedisplay();
+	glutTimerFunc(60, frame, 0);
 }
 
 int main(int argc, char* argv[])
@@ -307,6 +395,7 @@ int main(int argc, char* argv[])
 	glutDisplayFunc(drawScene);
 
 	//gestione animazione
+	glutTimerFunc(60,frame,0);
 	glutKeyboardFunc(myKeyboard);
 	glutMouseFunc(onMouseButton);
 	glutPassiveMotionFunc(seguiMouse);//chiama funzione per tutto il tempo in cui il mouse e sopra la finestra
