@@ -1,30 +1,30 @@
 ﻿#include "Collision.h"
 
-void updateGlobalCoordinates(Figura* fig) {
-	vec4 t = fig->Model * vec4(fig->box.corner_b, 1.0);
-	fig->box.corner_b_glob.x = t.x;
-	fig->box.corner_b_glob.y = t.y;
-	fig->box.corner_b_glob.z = t.z;
+void updateGlobalCollisionCoordinates(Figura* fig) {
+	vec4 t1 = fig->Model * vec4(fig->box.corner_b, 1.0);
+	fig->box.corner_b_glob.x = t1.x;
+	fig->box.corner_b_glob.y = t1.y;
+	fig->box.corner_b_glob.z = t1.z;
 
-	t = fig->Model * vec4(fig->box.corner_t, 1.0);
-	fig->box.corner_t_glob.x = t.x;
-	fig->box.corner_t_glob.y = t.y;
-	fig->box.corner_t_glob.z = t.z;
+	vec4 t2 = fig->Model * vec4(fig->box.corner_t, 1.0);
+	fig->box.corner_t_glob.x = t2.x;
+	fig->box.corner_t_glob.y = t2.y;
+	fig->box.corner_t_glob.z = t2.z;
 
 }
 
 
 bool checkCollision(Figura* fig1, Figura* fig2) {
-	updateGlobalCoordinates(fig1);
-	updateGlobalCoordinates(fig2);
+	updateGlobalCollisionCoordinates(fig1);
+	updateGlobalCollisionCoordinates(fig2);
 	//collisioni su asse x
 	bool collisionX = fig1->box.corner_b_glob.x <= fig2->box.corner_t_glob.x && fig1->box.corner_t_glob.x >= fig2->box.corner_b_glob.x;
 	//collisioni su asse y
-	bool collisionY = fig1->box.corner_b_glob.y <= fig2->box.corner_t_glob.y && fig1->box.corner_t_glob.y >= fig2->box.corner_b_glob.y;
-	return collisionX && collisionY;
+	bool collisionY = fig1->box.corner_b_glob.y <= fig2->box.corner_t_glob.y &&	fig1->box.corner_t_glob.y >= fig2->box.corner_b_glob.y;
+	return (collisionX && collisionY);
 }
 
-void calculateBoundingBox(Figura* fig) {
+void calculateBoundingBox(Figura* fig) { // calcolo bounding box in coordinate locali dell'oggetto
 	float ymin, ymax, xmin, xmax;
 	ymin = ymax = xmin = xmax = 0.0; //inizializzo tutte le vatriabili a 0
 	for (int i = 0; i < fig->vertex.size(); i++)
@@ -35,10 +35,10 @@ void calculateBoundingBox(Figura* fig) {
 		if (fig->vertex[i].x < xmin) {
 			xmin = fig->vertex[i].x;
 		}
-		if (fig->vertex[i].x > xmax) {
+		if (fig->vertex[i].y > ymax) {
 			ymax = fig->vertex[i].y;
 		}
-		if (fig->vertex[i].x < xmin) {
+		if (fig->vertex[i].y < ymin) {
 			ymin = fig->vertex[i].y;
 		}
 	}

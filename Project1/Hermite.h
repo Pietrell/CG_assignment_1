@@ -6,9 +6,6 @@
 #define PSI0(t)  (-2.0*t*t*t+3.0*t*t)
 #define PSI1(t)  (t*t*t-t*t)
 
-
-
-
 float dx(int i, float* t, float Tens, float Bias, float Cont, Figura* Fig);
 float dy(int i, float* t, float Tens, float Bias, float Cont, Figura* Fig);
 

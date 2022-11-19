@@ -5,17 +5,15 @@
 #include "Hermite.h"
 #include "Collision.h"
 #include <math.h>
+
 #pragma region constant
 #define  PI   3.14159265358979323846
 #define SCALE (float)30
 const float w = 1280.0;
 const float h = 720.0;
-
 #pragma endregion
 
 #pragma region Variabili_globali
-
-
 //Inizializzazione parametri Tes, Bias, Cont per la modifica delle derivate agli estremi
 float Tens = 0.0, Bias = 0.0, Cont = 0.0;  //Questa inizializzazione 'rappresenta le derivate come semplice rapporto incrementale
 static unsigned int programId;
@@ -24,15 +22,11 @@ GLuint MatProj, MatModel;
 unsigned int loctime, locres, locmouse, lsceltafs;
 int principalIndex;
 vec4 pos;
-
-
 Figura Aereo, Sfondo, Nemico1, Nemico2, Nemico3;
 vector<Figura*> Scena;
 uint32_t mouse_status = 0;
 float angleO;
 float modelview[16];
-
-
 #pragma endregion
 
 
@@ -82,54 +76,7 @@ void costruisciAereo(Figura* fig, vec4 color) {
 	costruisci_formaHermite(color, fig);
 
 }
-/*
-void costruisciProiettile(Figura* fig, vec4 color) {
-	int i;
-	float stepA = (2 * PI) / fig->nv;
-	float t;
-	float ymax = 0;
-	float ymin = 0;
 
-	fig->vertex.push_back(vec3(0.0, 0.0, 0.0));
-	fig->colorVertex.push_back(color);
-
-	for (i = 0; i <= fig->nv / 2; i++)
-	{
-		t = (float)i * stepA;
-		fig->vertex.push_back(vec3(cos(t), sin(t), 0.0));
-		fig->colorVertex.push_back(color);
-	}
-
-	for (i = 1; i < fig->nv; i++)
-	{
-
-		if (fig->vertici[i].x < xmin)
-			xmin = fig->vertici[i].x;
-	}
-
-	for (i = 1; i < fig->nv; i++)
-	{
-
-		if (fig->vertici[i].x > xmax)
-			xmax = fig->vertici[i].x;
-	}
-	for (i = 1; i < fig->nv; i++)
-	{
-		if (fig->vertici[i].y <= ymin)
-			ymin = fig->vertici[i].y;
-	}
-
-	for (i = 1; i < fig->nv; i++)
-	{
-		if (fig->vertici[i].y > ymax)
-			ymax = fig->vertici[i].y;
-	}
-	fig->box.corner_b_obj = vec4(xmin, ymin, 0.0, 1.0);
-	fig->box.corner_t_obj = vec4(xmax, ymax, 0.0, 1.0);
-
-}
-
-*/
 #pragma endregion
 
 float aggiornaAngolo(vec3 fig1, mat4 Mfig1, vec3 fig2, mat4 Mfig2) {
@@ -155,20 +102,13 @@ void nextEnemyMov(Figura* enemy, Figura* prin) {
 	vec4 posPr = prin->Model * vec4(prin->vertex[0], 1.0);
 	vec4 posEn = enemy->Model * vec4(enemy->vertex[0], 1.0);	
 	vec2 delta = vec2(posPr.x - posEn.x, posPr.y - posEn.y);
-	/*
 	//ottengo segno per cui moltiplicare lo step (come nel piano cartesiano)
 	posPr.x -= posEn.x;
 	posPr.y -= posEn.y;	
 	//a seconda del risultato ottenuto sopra sottraggo o sommo lo step alle coordinate
 	posEn.x += posPr.x > 0 ? +2 : -2;
 	posEn.y += posPr.y > 0 ? +2 : -2;
-	//aggiorno coordinate
-	*/
-	//implementazione jonny
-
-	posEn.x = sqrt( (posEn.x * posEn.x) + (2 * (posPr.x * delta.x)) + (delta.x * delta.x)) ;
-	posEn.y = sqrt((posEn.y * posEn.y) + (2 * (posPr.y * delta.y)) + (delta.y * delta.y)) ;
-
+	//aggiorno coordinate globali
 	enemy->globalPos.x = posEn.x;
 	enemy->globalPos.y = posEn.y;
 }
@@ -200,7 +140,7 @@ void INIT_VAO(void)
 	principalIndex = 1;
 	Aereo.draw = true;
 	calculateBoundingBox(&Aereo);
-	crea_VAO_Static(&Aereo);
+	crea_VAO_Hermite(&Aereo);
 	Scena.push_back(&Aereo);
 
 	//primo aereo nemico
@@ -213,7 +153,7 @@ void INIT_VAO(void)
 	Nemico1.sceltaFS = 0;
 	Nemico1.draw = true;
 	calculateBoundingBox(&Nemico1);
-	crea_VAO_Static(&Nemico1);	
+	crea_VAO_Hermite(&Nemico1);	
 	Scena.push_back(&Nemico1);
 
 
@@ -227,14 +167,13 @@ void INIT_VAO(void)
 	Nemico2.sceltaFS = 0;
 	Nemico2.draw = true;
 	calculateBoundingBox(&Nemico2);
-	crea_VAO_Static(&Nemico2);
+	crea_VAO_Hermite(&Nemico2);
 	Scena.push_back(&Nemico2);
 
 
 	//terzo aereo nemico
 	costruisciAereo(&Nemico3, vec4(1.0, 0.0, 0.0, 1.0));
 	Nemico3.globalPos = vec3(rand() % (int)w, rand() % (int)h, 0.0);
-	Nemico3.draw = true;
 	Nemico3.Model = mat4(1);
 	Nemico3.Model = translate(Nemico3.Model, Nemico3.globalPos);
 	Nemico3.Model = rotate(Nemico3.Model, 0.0f, vec3(0.0, 0.0, 1.0));
@@ -245,6 +184,7 @@ void INIT_VAO(void)
 	crea_VAO_Hermite(&Nemico3);
 	Scena.push_back(&Nemico3);
 
+	//passaggio dati a shader
 	MatProj = glGetUniformLocation(programId, "Projection");
 	MatModel = glGetUniformLocation(programId, "Model");
 	loctime = glGetUniformLocation(programId, "time");
@@ -287,23 +227,32 @@ void drawScene(void)
 
 		if(k==1){	//personaggio principale
 			
+
 			Scena[k]->Model = mat4(1);
 			Scena[k]->Model = translate(Scena[k]->Model, Scena[k]->globalPos);
 			Scena[k]->Model = rotate(Scena[k]->Model, Scena[k]->AngoloRotazione, vec3(0.0, 0.0, 1.0));
 			Scena[k]->Model = scale(Scena[k]->Model, vec3(w/SCALE, h/SCALE, 1.0));
+			updateGlobalCollisionCoordinates(Scena[k]);
+			
 			glUniform1i(lsceltafs, Scena[k]->sceltaFS);
 			glUniformMatrix4fv(MatModel, 1, GL_FALSE, value_ptr(Scena[k]->Model));
 			glBindVertexArray(Scena[k]->VAO);
-			glDrawArrays(GL_TRIANGLE_FAN, 0, Scena[k]->nv);
+			if (Scena[k]->hasHerm) {
+				glDrawArrays(GL_TRIANGLE_FAN, 0, Scena[k]->nvHer);
+			}else{
+
+				glDrawArrays(GL_TRIANGLE_FAN, 0, Scena[k]->nv);
+			}
+		
 		}
 		if(k>1) { //nemici
 			
-			Scena[k]->AngoloRotazione = aggiornaAngolo(Scena[principalIndex]->vertex[0], Scena[principalIndex]->Model, Scena[k]->vertex[0], Scena[k]->Model);
-			nextEnemyMov(Scena[k], Scena[principalIndex]);
-			if (checkCollision(Scena[k], Scena[principalIndex])) {
-				//Scena[principalIndex]->draw = false;
-				cout << "colpito" << endl;
+			
+			
+			if (Scena[principalIndex]->draw) { //sposto solo se il personaggio principale e ancora vivo
+				nextEnemyMov(Scena[k], Scena[principalIndex]);
 			}
+			Scena[k]->AngoloRotazione = aggiornaAngolo(Scena[principalIndex]->vertex[0], Scena[principalIndex]->Model, Scena[k]->vertex[0], Scena[k]->Model);
 			Scena[k]->Model = mat4(1);
 			Scena[k]->Model = translate(Scena[k]->Model, Scena[k]->globalPos);
 			Scena[k]->Model = rotate(Scena[k]->Model, Scena[k]->AngoloRotazione, vec3(0.0, 0.0, 1.0));
@@ -311,12 +260,24 @@ void drawScene(void)
 			glUniformMatrix4fv(MatModel, 1, GL_FALSE, value_ptr(Scena[k]->Model));
 			glUniform1i(lsceltafs, Scena[k]->sceltaFS);
 			glBindVertexArray(Scena[k]->VAO);
+			
 			if (Scena[k]->hasHerm) {
 				glDrawArrays(GL_TRIANGLE_FAN, 0, Scena[k]->nvHer);
 			}
+			else {
+
 			glDrawArrays(GL_TRIANGLE_FAN, 0, Scena[k]->nv);
+			}
 		}		
 		glBindVertexArray(0);
+
+		for (int k = 2; k < Scena.size(); k++)
+		{
+			if (checkCollision(Scena[1], Scena[k])) {
+				Scena[principalIndex]->draw = false;
+				cout << "colpito" << endl;
+			}
+		}
 	}
 	glutSwapBuffers();
 }
@@ -331,18 +292,6 @@ void seguiMouse(int x, int y) {
 	Aereo.AngoloRotazione = aggiornaAngolo(vec3(x,h-y,0.0), mat4(1), Aereo.vertex[0], Aereo.Model);
 }
 
-//void onMouseButton(int button, int state, int x, int y)
-//{	
-//	switch (button) {
-//	case GLUT_LEFT_BUTTON:      
-//		//spara();
-//		break;
-//	case GLUT_MIDDLE_BUTTON:  
-//		break;
-//	case GLUT_RIGHT_BUTTON:    
-//		break;
-//	}
-//}
 void myKeyboard(unsigned char key, int x, int y)
 {
 	{

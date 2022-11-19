@@ -29,7 +29,7 @@ void stars() {
         point(vec2(sx * 2.0 - 1.0 + mouse.x, sy * 2.0 - 1.0 + mouse.y), size * size * 2.0 + 1.0);
     }
 }
-//nuovo
+
 vec4 textureRND2D(vec2 uv){
 	uv = floor(fract(uv)*1e3);
 	float v = uv.x+uv.y*1e3;
@@ -79,9 +79,9 @@ void main() {
 	p += c1*0.006125;
 	p -= c2*0.006125;
 	c.gbr += vec3(0., 0., 0.) * c2*.5;
-	//p.y *= c.g;
+	p.y *= c.g;
 	c.grb += vec3(1., 1., 1.) * cloud(p*.1+time*-.00005)*1.;
-	//c += .125;
+	c += .125;
 	gl_FragColor = vec4(c, 1.);
     }
 }

@@ -15,7 +15,6 @@ typedef struct {
 	GLuint VAO;
 	GLuint VBO_Vert;
 	GLuint VBO_Col;
-	GLuint EBO_indici;
 
 	// Vertici	in valori locali
 	vector<vec3> vertex;
@@ -23,17 +22,15 @@ typedef struct {
 	vector<vec3> Hermite;
 	vector<vec4> colorHermite;
 	vector<int> index;
-	vector<vec2> boudLimit;
 
 	vec3 globalPos;
 	// Numero vertici
 	int nv;
 	int nvHer;
-	bool hasHerm,draw, isProjectile;
+	bool hasHerm,draw;
 	BoundingBox box;
-
 	//Matrice di Modellazione: Traslazione*Rotazione*Scala
 	mat4 Model;
-	float AngoloRotazione;
+	float AngoloRotazione; // rispetto asse x
 	unsigned int sceltaFS;
 } Figura;
