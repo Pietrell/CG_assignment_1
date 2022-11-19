@@ -3,6 +3,7 @@
 #include "Figura.h"
 #include "creaVAO.h"
 #include "Hermite.h"
+#include "Collision.h"
 #include <math.h>
 #pragma region constant
 #define  PI   3.14159265358979323846
@@ -131,8 +132,6 @@ void costruisciProiettile(Figura* fig, vec4 color) {
 */
 #pragma endregion
 
-
-
 float aggiornaAngolo(vec3 fig1, mat4 Mfig1, vec3 fig2, mat4 Mfig2) {
 	//trovo coordinate globali
 	vec4 pos1 = Mfig1 * vec4(fig1, 1.0);
@@ -151,9 +150,12 @@ float aggiornaAngolo(vec3 fig1, mat4 Mfig1, vec3 fig2, mat4 Mfig2) {
 }
 
 void nextEnemyMov(Figura* enemy, Figura* prin) {
+	
 	//ottengo coordinate finestra
 	vec4 posPr = prin->Model * vec4(prin->vertex[0], 1.0);
 	vec4 posEn = enemy->Model * vec4(enemy->vertex[0], 1.0);	
+	vec2 delta = vec2(posPr.x - posEn.x, posPr.y - posEn.y);
+	/*
 	//ottengo segno per cui moltiplicare lo step (come nel piano cartesiano)
 	posPr.x -= posEn.x;
 	posPr.y -= posEn.y;	
@@ -161,6 +163,12 @@ void nextEnemyMov(Figura* enemy, Figura* prin) {
 	posEn.x += posPr.x > 0 ? +2 : -2;
 	posEn.y += posPr.y > 0 ? +2 : -2;
 	//aggiorno coordinate
+	*/
+	//implementazione jonny
+
+	posEn.x = sqrt( (posEn.x * posEn.x) + (2 * (posPr.x * delta.x)) + (delta.x * delta.x)) ;
+	posEn.y = sqrt((posEn.y * posEn.y) + (2 * (posPr.y * delta.y)) + (delta.y * delta.y)) ;
+
 	enemy->globalPos.x = posEn.x;
 	enemy->globalPos.y = posEn.y;
 }
@@ -169,6 +177,7 @@ void nextEnemyMov(Figura* enemy, Figura* prin) {
 
 void INIT_VAO(void)
 {			
+	srand(time(NULL)); //inposto funzione random in base al tempo
 	Projection = ortho(0.0f, w, 0.0f, h);
 
 	//0 : sfondo
@@ -176,6 +185,7 @@ void INIT_VAO(void)
 	Sfondo.sceltaFS = 1;
 	Sfondo.Model = mat4(1);
 	Sfondo.Model = scale(Sfondo.Model, vec3(w , h , 1.0));
+	Sfondo.draw = true;
 	crea_VAO_Static(&Sfondo);
 	Scena.push_back(&Sfondo);
 
@@ -188,6 +198,8 @@ void INIT_VAO(void)
 	Aereo.Model = scale(Aereo.Model, vec3(w/SCALE, h/SCALE, 1.0));
 	Aereo.sceltaFS = 2;
 	principalIndex = 1;
+	Aereo.draw = true;
+	calculateBoundingBox(&Aereo);
 	crea_VAO_Static(&Aereo);
 	Scena.push_back(&Aereo);
 
@@ -199,6 +211,8 @@ void INIT_VAO(void)
 	Nemico1.Model = rotate(Nemico1.Model, 0.0f, vec3(0.0, 0.0, 1.0));
 	Nemico1.Model = scale(Nemico1.Model, vec3(w / SCALE, h / SCALE, 1.0));
 	Nemico1.sceltaFS = 0;
+	Nemico1.draw = true;
+	calculateBoundingBox(&Nemico1);
 	crea_VAO_Static(&Nemico1);	
 	Scena.push_back(&Nemico1);
 
@@ -211,6 +225,8 @@ void INIT_VAO(void)
 	Nemico2.Model = rotate(Nemico2.Model, 0.0f, vec3(0.0, 0.0, 1.0));
 	Nemico2.Model = scale(Nemico2.Model, vec3(w / SCALE, h / SCALE, 1.0));
 	Nemico2.sceltaFS = 0;
+	Nemico2.draw = true;
+	calculateBoundingBox(&Nemico2);
 	crea_VAO_Static(&Nemico2);
 	Scena.push_back(&Nemico2);
 
@@ -224,7 +240,8 @@ void INIT_VAO(void)
 	Nemico3.Model = rotate(Nemico3.Model, 0.0f, vec3(0.0, 0.0, 1.0));
 	Nemico3.Model = scale(Nemico3.Model, vec3(w / SCALE, h / SCALE, 1.0));
 	Nemico3.sceltaFS = 0;
-
+	Nemico3.draw = true;
+	calculateBoundingBox(&Nemico3);
 	crea_VAO_Hermite(&Nemico3);
 	Scena.push_back(&Nemico3);
 
@@ -256,6 +273,8 @@ void drawScene(void)
 
 	for (int k = 0; k < Scena.size(); k++)
 	{
+		if (Scena[k]->draw == false)
+			break; // se non devo disegnare l'elemento passo al prossimo
 		if (k==0) // sfondo
 		{
 			Scena[k]->Model = mat4(1);
@@ -281,6 +300,10 @@ void drawScene(void)
 			
 			Scena[k]->AngoloRotazione = aggiornaAngolo(Scena[principalIndex]->vertex[0], Scena[principalIndex]->Model, Scena[k]->vertex[0], Scena[k]->Model);
 			nextEnemyMov(Scena[k], Scena[principalIndex]);
+			if (checkCollision(Scena[k], Scena[principalIndex])) {
+				//Scena[principalIndex]->draw = false;
+				cout << "colpito" << endl;
+			}
 			Scena[k]->Model = mat4(1);
 			Scena[k]->Model = translate(Scena[k]->Model, Scena[k]->globalPos);
 			Scena[k]->Model = rotate(Scena[k]->Model, Scena[k]->AngoloRotazione, vec3(0.0, 0.0, 1.0));
@@ -289,9 +312,9 @@ void drawScene(void)
 			glUniform1i(lsceltafs, Scena[k]->sceltaFS);
 			glBindVertexArray(Scena[k]->VAO);
 			if (Scena[k]->hasHerm) {
-				glDrawArrays(GL_LINE_STRIP, 0, Scena[k]->nvHer);
+				glDrawArrays(GL_TRIANGLE_FAN, 0, Scena[k]->nvHer);
 			}
-			glDrawArrays(GL_LINE_STRIP, 0, Scena[k]->nv);
+			glDrawArrays(GL_TRIANGLE_FAN, 0, Scena[k]->nv);
 		}		
 		glBindVertexArray(0);
 	}
@@ -300,24 +323,26 @@ void drawScene(void)
 
 //prendo angolo tra nemico e personaggio per far si che fi giri verso lui
 
+#pragma region controlliUtente
+
 
 
 void seguiMouse(int x, int y) {
 	Aereo.AngoloRotazione = aggiornaAngolo(vec3(x,h-y,0.0), mat4(1), Aereo.vertex[0], Aereo.Model);
 }
 
-void onMouseButton(int button, int state, int x, int y)
-{	
-	switch (button) {
-	case GLUT_LEFT_BUTTON:      
-		//spara();
-		break;
-	case GLUT_MIDDLE_BUTTON:  
-		break;
-	case GLUT_RIGHT_BUTTON:    
-		break;
-	}
-}
+//void onMouseButton(int button, int state, int x, int y)
+//{	
+//	switch (button) {
+//	case GLUT_LEFT_BUTTON:      
+//		//spara();
+//		break;
+//	case GLUT_MIDDLE_BUTTON:  
+//		break;
+//	case GLUT_RIGHT_BUTTON:    
+//		break;
+//	}
+//}
 void myKeyboard(unsigned char key, int x, int y)
 {
 	{
@@ -342,6 +367,7 @@ void myKeyboard(unsigned char key, int x, int y)
 	}
 
 }
+#pragma endregion
 void frame(int a) {
 	glutPostRedisplay();
 	glutTimerFunc(60, frame, 0);
@@ -362,7 +388,8 @@ int main(int argc, char* argv[])
 	//gestione animazione
 	glutKeyboardFunc(myKeyboard);
 	glutPassiveMotionFunc(seguiMouse);//chiama funzione per tutto il tempo in cui il mouse e sopra la finestra
-	glutTimerFunc(60,frame,0);
+	glutTimerFunc(40,frame,0); // aggionra con frequenza di 25 FPS
+
 	glewExperimental = GL_TRUE;
 	glewInit();
 	INIT_SHADER();

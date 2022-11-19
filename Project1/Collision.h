@@ -2,6 +2,6 @@
 
 #include "Figura.h"
 
-bool checkCollision(BoundingBox obj1, BoundingBox obj2);
+bool checkCollision(Figura* fig1, Figura* fig2);
 void calculateBoundingBox(Figura* fig);
-void updateModel(mat4 matModel);
+void updateGlobalCoordinates(Figura* fig);

@@ -5,10 +5,10 @@
 
 
 typedef struct {
-	vec4 corner_b_obj;
-	vec4 corner_t_obj;
-	vec4 corner_b;
-	vec4 corner_t;
+	vec3 corner_b_glob;
+	vec3 corner_t_glob;
+	vec3 corner_b;
+	vec3 corner_t;
 }BoundingBox;
 
 typedef struct {
