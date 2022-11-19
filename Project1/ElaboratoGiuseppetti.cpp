@@ -140,7 +140,7 @@ void INIT_VAO(void)
 	principalIndex = 1;
 	Aereo.draw = true;
 	calculateBoundingBox(&Aereo);
-	crea_VAO_Hermite(&Aereo);
+	crea_VAO_Static(&Aereo);
 	Scena.push_back(&Aereo);
 
 	//primo aereo nemico
