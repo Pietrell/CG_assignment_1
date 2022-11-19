@@ -41,3 +41,7 @@ void calculateBoundingBox(Figura* fig) {
 
 
 }
+void updateModel(mat4 matModel) {
+
+
+}

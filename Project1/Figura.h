@@ -1,7 +1,15 @@
 #pragma once
 #include <iostream>
 #include "Lib.h"
-#include "Collision.h"
+
+
+
+typedef struct {
+	vec4 corner_b_obj;
+	vec4 corner_t_obj;
+	vec4 corner_b;
+	vec4 corner_t;
+}BoundingBox;
 
 typedef struct {
 	GLuint VAO;
@@ -27,4 +35,5 @@ typedef struct {
 	//Matrice di Modellazione: Traslazione*Rotazione*Scala
 	mat4 Model;
 	float AngoloRotazione;
+	unsigned int sceltaFS;
 } Figura;

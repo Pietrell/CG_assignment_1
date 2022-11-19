@@ -6,6 +6,7 @@
 #include <math.h>
 #pragma region constant
 #define  PI   3.14159265358979323846
+#define SCALE (float)30
 const float w = 1280.0;
 const float h = 720.0;
 
@@ -19,7 +20,8 @@ float Tens = 0.0, Bias = 0.0, Cont = 0.0;  //Questa inizializzazione 'rappresent
 static unsigned int programId;
 mat4 Projection, eye;
 GLuint MatProj, MatModel;
-unsigned int loctime, locres, locmouse; 
+unsigned int loctime, locres, locmouse, lsceltafs;
+int principalIndex;
 vec4 ViewPort,pos;
 
 
@@ -35,18 +37,15 @@ float modelview[16];
 
 #pragma region DefinizioneForme
 void costruisciSfondo(vec4 color) {
-	Sfondo.vertex.push_back(vec3(-1.0, -1.0, -1.0));
+	Sfondo.vertex.push_back(vec3(0.0, 0.0, 0.0));
 	Sfondo.colorVertex.push_back(color);
-	Sfondo.vertex.push_back(vec3(1.0, -1.0, -1.0));
+	Sfondo.vertex.push_back(vec3(0.0, 1.0, 0.0));
 	Sfondo.colorVertex.push_back(color);
-	Sfondo.vertex.push_back(vec3(1.0, 1.0, -1.0));
+	Sfondo.vertex.push_back(vec3(1.0, 0.0, 0.0));
 	Sfondo.colorVertex.push_back(color);
-	Sfondo.vertex.push_back(vec3(1.0, 1.0, -1.0));
+	Sfondo.vertex.push_back(vec3(1.0, 1.0, 0.0));
 	Sfondo.colorVertex.push_back(color);
-	Sfondo.vertex.push_back(vec3(-1.0, 1.0, -1.0));
-	Sfondo.colorVertex.push_back(color);
-	Sfondo.vertex.push_back(vec3(-1.0, -1.0, -1.0));
-	Sfondo.colorVertex.push_back(color);
+	Sfondo.nv = 4;
 }
 
 
@@ -82,7 +81,7 @@ void costruisciAereo(Figura* fig, vec4 color) {
 	costruisci_formaHermite(color, fig);
 
 }
-
+/*
 void costruisciProiettile(Figura* fig, vec4 color) {
 	int i;
 	float stepA = (2 * PI) / fig->nv;
@@ -129,6 +128,7 @@ void costruisciProiettile(Figura* fig, vec4 color) {
 
 }
 
+*/
 #pragma endregion
 
 
@@ -191,35 +191,47 @@ void INIT_VAO(void)
 {			
 	Projection = ortho(0.0f, w, 0.0f, h);
 	ViewPort = vec4(0.0f, 0.0f, w, h);
-	//posPrinc = vec3(w / 2, h/ 2, 0.0);
-	//eye = mat4(1);
-	//mousePos = vec3(0.0, 0.0, 0.0);
-	//prendo da shader
+	//0 : sfondo
+	costruisciSfondo(vec4(0.3,0.3,0.3,0.1));
+	Sfondo.sceltaFS = 1;
+	Sfondo.Model = mat4(1);
+	Sfondo.Model = scale(Sfondo.Model, vec3(w , h , 1.0));
+
+	crea_VAO_Static(&Sfondo);
+	Scena.push_back(&Sfondo);
+
+
+	//1 : personaggio principale
 	costruisciAereo(&Aereo, vec4(1.0, 1.0, 0.0, 1.0));	
 	Aereo.globalPos = vec3(w / 2, h / 2, 0.0);
-	
-
 	Aereo.Model = mat4(1);
 	Aereo.Model = translate(Aereo.Model, Aereo.globalPos);
 	Aereo.Model = rotate(Aereo.Model, Aereo.AngoloRotazione, vec3(0.0, 0.0, 1.0));
-	Aereo.Model = scale(Aereo.Model, vec3(w / 7, h / 7, 1.0));
-
+	Aereo.Model = scale(Aereo.Model, vec3(w/SCALE, h/SCALE, 1.0));
+	Aereo.sceltaFS = 0;
+	principalIndex = 1;
 	crea_VAO_Static(&Aereo);
 	Scena.push_back(&Aereo);
 
 
 
 	//primo aereo nemico
+
+
 	costruisciAereo(&Nemico1, vec4(1.0, 0.0, 0.0, 1.0));
 	Nemico1.globalPos = vec3(rand()%(int)w, rand()%(int)h, 0.0);	
 		
 	Nemico1.Model = mat4(1);
 	Nemico1.Model = translate(Nemico1.Model, Nemico1.globalPos);
 	Nemico1.Model = rotate(Nemico1.Model, 0.0f, vec3(0.0, 0.0, 1.0));
-	Nemico1.Model = scale(Nemico1.Model, vec3(w / 15, h / 15, 1.0));
-
+	Nemico1.Model = scale(Nemico1.Model, vec3(w / SCALE, h / SCALE, 1.0));
+	Nemico1.sceltaFS = 0;
 	crea_VAO_Static(&Nemico1);	
 	Scena.push_back(&Nemico1);
+
+
+	//secondo aereo nemico
+
 
 	costruisciAereo(&Nemico2, vec4(1.0, 0.0, 0.0, 1.0));
 	Nemico2.globalPos = vec3(rand() % (int)w, rand() % (int)h, 0.0);
@@ -227,9 +239,15 @@ void INIT_VAO(void)
 	Nemico2.Model = mat4(1);
 	Nemico2.Model = translate(Nemico2.Model, Nemico2.globalPos);
 	Nemico2.Model = rotate(Nemico2.Model, 0.0f, vec3(0.0, 0.0, 1.0));
-	Nemico2.Model = scale(Nemico2.Model, vec3(w / 20, h / 20, 1.0));
+	Nemico2.Model = scale(Nemico2.Model, vec3(w / SCALE, h / SCALE, 1.0));
+	Nemico2.sceltaFS = 0;
+
 	crea_VAO_Static(&Nemico2);
 	Scena.push_back(&Nemico2);
+
+
+	//terzo aereo nemico
+
 
 	costruisciAereo(&Nemico3, vec4(1.0, 0.0, 0.0, 1.0));
 	Nemico3.globalPos = vec3(rand() % (int)w, rand() % (int)h, 0.0);
@@ -237,7 +255,9 @@ void INIT_VAO(void)
 	Nemico3.Model = mat4(1);
 	Nemico3.Model = translate(Nemico3.Model, Nemico3.globalPos);
 	Nemico3.Model = rotate(Nemico3.Model, 0.0f, vec3(0.0, 0.0, 1.0));
-	Nemico3.Model = scale(Nemico3.Model, vec3(w / 20, h / 20, 1.0));
+	Nemico3.Model = scale(Nemico3.Model, vec3(w / SCALE, h / SCALE, 1.0));
+	Nemico3.sceltaFS = 0;
+
 	crea_VAO_Hermite(&Nemico3);
 	Scena.push_back(&Nemico3);
 
@@ -247,6 +267,7 @@ void INIT_VAO(void)
 	loctime = glGetUniformLocation(programId, "time");
 	locres = glGetUniformLocation(programId, "res");
 	locmouse = glGetUniformLocation(programId, "mouse");
+	lsceltafs = glGetUniformLocation(programId, "sceltaFS");
 
 
 
@@ -266,37 +287,46 @@ void INIT_SHADER(void)
 void drawScene(void)
 {
 	
-	float time = glutGet(GLUT_ELAPSED_TIME) / 1000.0f;
-	
 	glUseProgram(programId);
 	glUniformMatrix4fv(MatProj, 1, GL_FALSE, value_ptr(Projection));	
 	glUniform2f(locres, w, h );
-
-
 	glClearColor(0.0, 0.0, 0.0, 0.0);
 	glClear(GL_COLOR_BUFFER_BIT);	
 
 	for (int k = 0; k < Scena.size(); k++)
 	{
-		if(k==0){//aereo bello
+		if (k==0)
+		{
+			Scena[k]->Model = mat4(1);
+			Scena[k]->Model = scale(Scena[k]->Model, vec3(w, h, 1.0));
+
+			glUniform1i(lsceltafs, Scena[k]->sceltaFS);
+			glUniformMatrix4fv(MatModel, 1, GL_FALSE, value_ptr(Scena[k]->Model));
+			glBindVertexArray(Scena[k]->VAO);
+			glDrawArrays(GL_TRIANGLE_STRIP, 0, Scena[k]->nv);
+		}
+
+		if(k==1){//aereo bello
+			
 			Scena[k]->Model = mat4(1);
 			Scena[k]->Model = translate(Scena[k]->Model, Scena[k]->globalPos);
 			Scena[k]->Model = rotate(Scena[k]->Model, Scena[k]->AngoloRotazione, vec3(0.0, 0.0, 1.0));
-			Scena[k]->Model = scale(Scena[k]->Model, vec3(w / 7, h / 7, 1.0));
+			Scena[k]->Model = scale(Scena[k]->Model, vec3(w/SCALE, h/SCALE, 1.0));
 			glUniformMatrix4fv(MatModel, 1, GL_FALSE, value_ptr(Scena[k]->Model));
+			glUniform1i(lsceltafs, Scena[k]->sceltaFS);
 			glBindVertexArray(Scena[k]->VAO);
 			glDrawArrays(GL_TRIANGLE_FAN, 0, Scena[k]->nv);
 		}
-		else {
-
-			Scena[k]->AngoloRotazione = aggiornaAngolo(Scena[0]->vertex[0], Scena[0]->Model, Scena[k]->vertex[0], Scena[k]->Model);			
-			nextEnemyMov(Scena[k], Scena[0]);
-
+		if(k>1) {
+			
+			Scena[k]->AngoloRotazione = aggiornaAngolo(Scena[principalIndex]->vertex[0], Scena[principalIndex]->Model, Scena[k]->vertex[0], Scena[k]->Model);
+			nextEnemyMov(Scena[k], Scena[principalIndex]);
 			Scena[k]->Model = mat4(1);
 			Scena[k]->Model = translate(Scena[k]->Model, Scena[k]->globalPos);
 			Scena[k]->Model = rotate(Scena[k]->Model, Scena[k]->AngoloRotazione, vec3(0.0, 0.0, 1.0));
-			Scena[k]->Model = scale(Scena[k]->Model, vec3(w / 10, h / 10, 1.0));
+			Scena[k]->Model = scale(Scena[k]->Model, vec3(w / SCALE, h / SCALE, 1.0));
 			glUniformMatrix4fv(MatModel, 1, GL_FALSE, value_ptr(Scena[k]->Model));
+			glUniform1i(lsceltafs, Scena[k]->sceltaFS);
 			glBindVertexArray(Scena[k]->VAO);
 			if (Scena[k]->hasHerm) {
 				glDrawArrays(GL_LINE_STRIP, 0, Scena[k]->nvHer);
@@ -395,10 +425,10 @@ int main(int argc, char* argv[])
 	glutDisplayFunc(drawScene);
 
 	//gestione animazione
-	glutTimerFunc(60,frame,0);
 	glutKeyboardFunc(myKeyboard);
-	glutMouseFunc(onMouseButton);
+	//glutMouseFunc(onMouseButton);
 	glutPassiveMotionFunc(seguiMouse);//chiama funzione per tutto il tempo in cui il mouse e sopra la finestra
+	glutTimerFunc(60,frame,0);
 	glewExperimental = GL_TRUE;
 	glewInit();
 	INIT_SHADER();
