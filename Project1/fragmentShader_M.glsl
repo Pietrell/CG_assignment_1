@@ -13,21 +13,20 @@ precision highp float;
 
 
 
-const int STAR_COUNT = 200;
-const vec3 STAR_COLOR = vec3(1.0);
-
-const vec3 SUN_DIR = vec3(0.940721, 0.28221626, 0.18814417);
-const vec3 SUN_COLOR = vec3(0.3, 0.21, 0.165);
+const int STAR_COUNT = 500;
 
 
 float rand(vec2 co){
-    return fract(sin(dot(co, vec2(12.9898, 78.233))) * 43758.5453);
+    return fract(sin(dot(co, vec2(12.9898, 78.233))) * 4758.5453);
 }
 
 void point(vec2 pos, float size) {
     pos *= resolution;
     float d = distance(gl_FragCoord.xy, pos);
-    gl_FragColor.rgb += smoothstep(size, 0.0, d) * STAR_COLOR;
+    //gl_FragColor = vec4(cos(time/3000), cos(time/5000), cos(time/1000),0.0);
+   // gl_FragColor.rgb += vec3(cos(time/3000), cos(time/5000), cos(time/1000));
+    gl_FragColor.rgb += smoothstep(size, 0.0, d);
+    
 }
 
 void stars() {
@@ -38,7 +37,6 @@ void stars() {
         point(vec2(sx * 2.0 - 1.0 + mouse.x, sy * 2.0 - 1.0 + mouse.y), size * size * 2.0 + 1.0);
     }
 }
-
 
 void main() {
     if (sceltaFS==0)

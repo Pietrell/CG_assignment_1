@@ -265,7 +265,7 @@ void INIT_VAO(void)
 	MatProj = glGetUniformLocation(programId, "Projection");
 	MatModel = glGetUniformLocation(programId, "Model");
 	loctime = glGetUniformLocation(programId, "time");
-	locres = glGetUniformLocation(programId, "res");
+	locres = glGetUniformLocation(programId, "resolution");
 	locmouse = glGetUniformLocation(programId, "mouse");
 	lsceltafs = glGetUniformLocation(programId, "sceltaFS");
 
@@ -359,8 +359,7 @@ void seguiMouse(int x, int y) {
 }
 
 void onMouseButton(int button, int state, int x, int y)
-{
-	
+{	
 	switch (button) {
 	case GLUT_LEFT_BUTTON:      
 		spara();
@@ -370,10 +369,6 @@ void onMouseButton(int button, int state, int x, int y)
 	case GLUT_RIGHT_BUTTON:    
 		break;
 	}
-
-	
-
-	
 }
 void myKeyboard(unsigned char key, int x, int y)
 {
@@ -407,7 +402,6 @@ void myKeyboard(unsigned char key, int x, int y)
 
 }
 void frame(int a) {
-
 	glutPostRedisplay();
 	glutTimerFunc(60, frame, 0);
 }
