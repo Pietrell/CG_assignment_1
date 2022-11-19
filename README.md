@@ -8,3 +8,7 @@ Elaborato 1 Comuter Graphics
  
      nella finestra "esplora soluzioni":tasto destro del mouse su "Project1" > "Proprietà configurazione" 
      nelle proprietà generali cambiate alla voce "set di strumenti della piattaforma" la versione selezionata
+
+
+Potrebbe essere necessario reinstallare i pacchetti NuGet (GLM, NupenGL.Core, NupenGl.Redist)
+Se Visual Studio dice che sono già installati è necessario prima disinstallarli
