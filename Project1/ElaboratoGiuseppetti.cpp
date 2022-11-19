@@ -22,7 +22,7 @@ mat4 Projection, eye;
 GLuint MatProj, MatModel;
 unsigned int loctime, locres, locmouse, lsceltafs;
 int principalIndex;
-vec4 ViewPort,pos;
+vec4 pos;
 
 
 Figura Aereo, Sfondo, Nemico1, Nemico2, Nemico3;
@@ -141,48 +141,28 @@ float aggiornaAngolo(vec3 fig1, mat4 Mfig1, vec3 fig2, mat4 Mfig2) {
 	//creo un nuovo sistema di riferimento in cui fig1 e il centro
 	pos2.x = (pos2.x - pos1.x);
 	pos2.y = (pos2.y - pos1.y);
-
-	//mappo posizione tra -1 e 1
 	
 	//calcolo angolo tra i due punti dati ponendo x = 0 gradi
 	double radian = atan(pos2.y / pos2.x);
 	if (pos2.x >= 0) {
 		 radian += radians(180.0);
 	}
-	return radian - radians(90.0);
-
+	return radian - radians(90.0); // risultato ottenuto mappa l'asse delle ascisse
 }
 
 void nextEnemyMov(Figura* enemy, Figura* prin) {
 	//ottengo coordinate finestra
 	vec4 posPr = prin->Model * vec4(prin->vertex[0], 1.0);
-	vec4 posEn = enemy->Model * vec4(enemy->vertex[0], 1.0);
+	vec4 posEn = enemy->Model * vec4(enemy->vertex[0], 1.0);	
+	//ottengo segno per cui moltiplicare lo step (come nel piano cartesiano)
 	posPr.x -= posEn.x;
-	posPr.y -= posEn.y;
-
-
-	/*
-	float anggolollo = enemy->AngoloRotazione ;
-
-	mat4 ruota = translate(mat4(1), vec3(10.0, 0.0, 0.0));;
-	ruota = glm::rotate(mat4(1.0), anggolollo, vec3(0.0, 0.0, 1.0));
-
-	vec4 spos = vec4(1.0,0.0,0.0,1.0) * ruota;
-	posEn = posEn + spos;
-
-	enemy->globalPos = posEn;
-	
-	*/
-	//vec4 posEn = vec4(enemy->globalPos, 1.0);
-	//float ang_ = enemy->AngoloRotazione;
-	
+	posPr.y -= posEn.y;	
+	//a seconda del risultato ottenuto sopra sottraggo o sommo lo step alle coordinate
 	posEn.x += posPr.x > 0 ? +2 : -2;
 	posEn.y += posPr.y > 0 ? +2 : -2;
-	
-
+	//aggiorno coordinate
 	enemy->globalPos.x = posEn.x;
 	enemy->globalPos.y = posEn.y;
-
 }
 
 #pragma region INIT
@@ -190,37 +170,30 @@ void nextEnemyMov(Figura* enemy, Figura* prin) {
 void INIT_VAO(void)
 {			
 	Projection = ortho(0.0f, w, 0.0f, h);
-	ViewPort = vec4(0.0f, 0.0f, w, h);
+
 	//0 : sfondo
 	costruisciSfondo(vec4(0.3,0.3,0.3,0.1));
 	Sfondo.sceltaFS = 1;
 	Sfondo.Model = mat4(1);
 	Sfondo.Model = scale(Sfondo.Model, vec3(w , h , 1.0));
-
 	crea_VAO_Static(&Sfondo);
 	Scena.push_back(&Sfondo);
 
-
 	//1 : personaggio principale
-	costruisciAereo(&Aereo, vec4(1.0, 1.0, 0.0, 1.0));	
+	costruisciAereo(&Aereo, vec4(1.0, 1.0, 1.0, 0.1));	
 	Aereo.globalPos = vec3(w / 2, h / 2, 0.0);
 	Aereo.Model = mat4(1);
 	Aereo.Model = translate(Aereo.Model, Aereo.globalPos);
 	Aereo.Model = rotate(Aereo.Model, Aereo.AngoloRotazione, vec3(0.0, 0.0, 1.0));
 	Aereo.Model = scale(Aereo.Model, vec3(w/SCALE, h/SCALE, 1.0));
-	Aereo.sceltaFS = 0;
+	Aereo.sceltaFS = 2;
 	principalIndex = 1;
 	crea_VAO_Static(&Aereo);
 	Scena.push_back(&Aereo);
 
-
-
 	//primo aereo nemico
-
-
 	costruisciAereo(&Nemico1, vec4(1.0, 0.0, 0.0, 1.0));
-	Nemico1.globalPos = vec3(rand()%(int)w, rand()%(int)h, 0.0);	
-		
+	Nemico1.globalPos = vec3(rand()%(int)w, rand()%(int)h, 0.0);		
 	Nemico1.Model = mat4(1);
 	Nemico1.Model = translate(Nemico1.Model, Nemico1.globalPos);
 	Nemico1.Model = rotate(Nemico1.Model, 0.0f, vec3(0.0, 0.0, 1.0));
@@ -231,24 +204,18 @@ void INIT_VAO(void)
 
 
 	//secondo aereo nemico
-
-
 	costruisciAereo(&Nemico2, vec4(1.0, 0.0, 0.0, 1.0));
-	Nemico2.globalPos = vec3(rand() % (int)w, rand() % (int)h, 0.0);
-	
+	Nemico2.globalPos = vec3(rand() % (int)w, rand() % (int)h, 0.0);	
 	Nemico2.Model = mat4(1);
 	Nemico2.Model = translate(Nemico2.Model, Nemico2.globalPos);
 	Nemico2.Model = rotate(Nemico2.Model, 0.0f, vec3(0.0, 0.0, 1.0));
 	Nemico2.Model = scale(Nemico2.Model, vec3(w / SCALE, h / SCALE, 1.0));
 	Nemico2.sceltaFS = 0;
-
 	crea_VAO_Static(&Nemico2);
 	Scena.push_back(&Nemico2);
 
 
 	//terzo aereo nemico
-
-
 	costruisciAereo(&Nemico3, vec4(1.0, 0.0, 0.0, 1.0));
 	Nemico3.globalPos = vec3(rand() % (int)w, rand() % (int)h, 0.0);
 	Nemico3.draw = true;
@@ -261,17 +228,12 @@ void INIT_VAO(void)
 	crea_VAO_Hermite(&Nemico3);
 	Scena.push_back(&Nemico3);
 
-
 	MatProj = glGetUniformLocation(programId, "Projection");
 	MatModel = glGetUniformLocation(programId, "Model");
 	loctime = glGetUniformLocation(programId, "time");
 	locres = glGetUniformLocation(programId, "resolution");
 	locmouse = glGetUniformLocation(programId, "mouse");
 	lsceltafs = glGetUniformLocation(programId, "sceltaFS");
-
-
-
-
 }
 
 void INIT_SHADER(void)
@@ -285,8 +247,7 @@ void INIT_SHADER(void)
 #pragma endregion
 
 void drawScene(void)
-{
-	
+{	
 	glUseProgram(programId);
 	glUniformMatrix4fv(MatProj, 1, GL_FALSE, value_ptr(Projection));	
 	glUniform2f(locres, w, h );
@@ -295,29 +256,28 @@ void drawScene(void)
 
 	for (int k = 0; k < Scena.size(); k++)
 	{
-		if (k==0)
+		if (k==0) // sfondo
 		{
 			Scena[k]->Model = mat4(1);
 			Scena[k]->Model = scale(Scena[k]->Model, vec3(w, h, 1.0));
-
 			glUniform1i(lsceltafs, Scena[k]->sceltaFS);
 			glUniformMatrix4fv(MatModel, 1, GL_FALSE, value_ptr(Scena[k]->Model));
 			glBindVertexArray(Scena[k]->VAO);
 			glDrawArrays(GL_TRIANGLE_STRIP, 0, Scena[k]->nv);
 		}
 
-		if(k==1){//aereo bello
+		if(k==1){	//personaggio principale
 			
 			Scena[k]->Model = mat4(1);
 			Scena[k]->Model = translate(Scena[k]->Model, Scena[k]->globalPos);
 			Scena[k]->Model = rotate(Scena[k]->Model, Scena[k]->AngoloRotazione, vec3(0.0, 0.0, 1.0));
 			Scena[k]->Model = scale(Scena[k]->Model, vec3(w/SCALE, h/SCALE, 1.0));
-			glUniformMatrix4fv(MatModel, 1, GL_FALSE, value_ptr(Scena[k]->Model));
 			glUniform1i(lsceltafs, Scena[k]->sceltaFS);
+			glUniformMatrix4fv(MatModel, 1, GL_FALSE, value_ptr(Scena[k]->Model));
 			glBindVertexArray(Scena[k]->VAO);
 			glDrawArrays(GL_TRIANGLE_FAN, 0, Scena[k]->nv);
 		}
-		if(k>1) {
+		if(k>1) { //nemici
 			
 			Scena[k]->AngoloRotazione = aggiornaAngolo(Scena[principalIndex]->vertex[0], Scena[principalIndex]->Model, Scena[k]->vertex[0], Scena[k]->Model);
 			nextEnemyMov(Scena[k], Scena[principalIndex]);
@@ -332,37 +292,25 @@ void drawScene(void)
 				glDrawArrays(GL_LINE_STRIP, 0, Scena[k]->nvHer);
 			}
 			glDrawArrays(GL_LINE_STRIP, 0, Scena[k]->nv);
-		}
-
-		
-		
+		}		
 		glBindVertexArray(0);
 	}
-
 	glutSwapBuffers();
-
 }
 
 //prendo angolo tra nemico e personaggio per far si che fi giri verso lui
 
 
-void spara() {
-	
-
-}
 
 void seguiMouse(int x, int y) {
-
 	Aereo.AngoloRotazione = aggiornaAngolo(vec3(x,h-y,0.0), mat4(1), Aereo.vertex[0], Aereo.Model);
-	
-	
 }
 
 void onMouseButton(int button, int state, int x, int y)
 {	
 	switch (button) {
 	case GLUT_LEFT_BUTTON:      
-		spara();
+		//spara();
 		break;
 	case GLUT_MIDDLE_BUTTON:  
 		break;
@@ -375,11 +323,6 @@ void myKeyboard(unsigned char key, int x, int y)
 	{
 		switch (key)
 		{
-
-		case ' ':
-			
-			break;
-
 		case 'w':
 			Aereo.globalPos.y +=5;
 			break;
@@ -393,8 +336,6 @@ void myKeyboard(unsigned char key, int x, int y)
 		case 'd':
 			Aereo.globalPos.x +=5;
 			break;
-
-		
 		default:
 			break;
 		}
@@ -420,7 +361,6 @@ int main(int argc, char* argv[])
 
 	//gestione animazione
 	glutKeyboardFunc(myKeyboard);
-	//glutMouseFunc(onMouseButton);
 	glutPassiveMotionFunc(seguiMouse);//chiama funzione per tutto il tempo in cui il mouse e sopra la finestra
 	glutTimerFunc(60,frame,0);
 	glewExperimental = GL_TRUE;
@@ -428,8 +368,7 @@ int main(int argc, char* argv[])
 	INIT_SHADER();
 	INIT_VAO();
 	glEnable(GL_BLEND);
-	glBlendFunc(GL_SRC_ALPHA, GL_ONE_MINUS_SRC_ALPHA);
-	
+	glBlendFunc(GL_SRC_ALPHA, GL_ONE_MINUS_SRC_ALPHA);	
 	glViewport(0, 0, w, h);
 	glutMainLoop();
 }
