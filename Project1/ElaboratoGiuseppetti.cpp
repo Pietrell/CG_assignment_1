@@ -290,20 +290,32 @@ void seguiMouse(int x, int y) {
 void myKeyboard(unsigned char key, int x, int y)
 {
 	{
+		//controllo di non superare i limiti di finestra
 		switch (key)
 		{
 		case 'w':
-			Aereo.globalPos.y +=5;
+			if (Aereo.globalPos.y < h) {
+				Aereo.globalPos.y +=5;
+			}
 			break;
 		case 'a':
+			if (Aereo.globalPos.x > 0) {
+
 			Aereo.globalPos.x -=5;
+			}
 			break;
 
 		case 's':
+			if (Aereo.globalPos.y > 0) {
+
 			Aereo.globalPos.y -=5;
+			}
 			break;
 		case 'd':
+			if (Aereo.globalPos.x < w) {
+
 			Aereo.globalPos.x +=5;
+			}
 			break;
 		default:
 			break;

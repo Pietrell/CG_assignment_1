@@ -26,13 +26,8 @@ void updateGlobalCollisionCoordinates(Figura* fig) {
 		ymin = t[1].y;
 		ymax = t[0].y;
 	}
-
-
-
-
 	fig->box.corner_t_glob = vec3(xmax, ymax, 0.0);
 	fig->box.corner_b_glob = vec3(xmin, ymin, 0.0);
-
 }
 
 
