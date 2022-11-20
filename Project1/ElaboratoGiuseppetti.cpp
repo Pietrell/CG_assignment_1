@@ -204,79 +204,74 @@ void INIT_SHADER(void)
 #pragma endregion
 
 void drawScene(void)
-{	
+{
 	glUseProgram(programId);
-	glUniformMatrix4fv(MatProj, 1, GL_FALSE, value_ptr(Projection));	
-	glUniform2f(locres, w, h );
+	glUniformMatrix4fv(MatProj, 1, GL_FALSE, value_ptr(Projection));
+	glUniform2f(locres, w, h);
 	glClearColor(0.0, 0.0, 0.0, 0.0);
-	glClear(GL_COLOR_BUFFER_BIT);	
+	glClear(GL_COLOR_BUFFER_BIT);
 
-	for (int k = 0; k < Scena.size(); k++)
+	//sfondo
+	Scena[0]->Model = mat4(1);
+	Scena[0]->Model = scale(Scena[0]->Model, vec3(w, h, 1.0));
+	glUniform1i(lsceltafs, Scena[0]->sceltaFS);
+	glUniformMatrix4fv(MatModel, 1, GL_FALSE, value_ptr(Scena[0]->Model));
+	glBindVertexArray(Scena[0]->VAO);
+	glDrawArrays(GL_TRIANGLE_STRIP, 0, Scena[0]->nv);
+	glBindVertexArray(0);
+	//elementi dinamici
+
+	for (int k = 1; k < Scena.size(); k++)
 	{
-		if (Scena[k]->draw == false)
-			break; // se non devo disegnare l'elemento passo al prossimo
-		if (k==0) // sfondo
-		{
-			Scena[k]->Model = mat4(1);
-			Scena[k]->Model = scale(Scena[k]->Model, vec3(w, h, 1.0));
-			glUniform1i(lsceltafs, Scena[k]->sceltaFS);
-			glUniformMatrix4fv(MatModel, 1, GL_FALSE, value_ptr(Scena[k]->Model));
-			glBindVertexArray(Scena[k]->VAO);
-			glDrawArrays(GL_TRIANGLE_STRIP, 0, Scena[k]->nv);
-		}
+		if (Scena[k]->draw)
+		{//disegno elemento solo se esiste
+			if (k == 1)
+			{	//personaggio principale
+				Scena[k]->Model = mat4(1);
+				Scena[k]->Model = translate(Scena[k]->Model, Scena[k]->globalPos);
+				Scena[k]->Model = rotate(Scena[k]->Model, Scena[k]->AngoloRotazione, vec3(0.0, 0.0, 1.0));
+				Scena[k]->Model = scale(Scena[k]->Model, vec3(w / SCALE, h / SCALE, 1.0));
+				updateGlobalCollisionCoordinates(Scena[k]); // aggiorno la bounding box per ogni elemento dinamico(aereo)
 
-		if(k==1){	//personaggio principale
-			
+				glUniform1i(lsceltafs, Scena[k]->sceltaFS);
+				glUniformMatrix4fv(MatModel, 1, GL_FALSE, value_ptr(Scena[k]->Model));
+				glBindVertexArray(Scena[k]->VAO);
+				if (Scena[k]->hasHerm) {
+					glDrawArrays(GL_TRIANGLE_FAN, 0, Scena[k]->nvHer);
+				}
+				else
+				{
+					glDrawArrays(GL_TRIANGLE_FAN, 0, Scena[k]->nv);
+				}
+			}
+			if (k > 1) { //nemici
 
-			Scena[k]->Model = mat4(1);
-			Scena[k]->Model = translate(Scena[k]->Model, Scena[k]->globalPos);
-			Scena[k]->Model = rotate(Scena[k]->Model, Scena[k]->AngoloRotazione, vec3(0.0, 0.0, 1.0));
-			Scena[k]->Model = scale(Scena[k]->Model, vec3(w/SCALE, h/SCALE, 1.0));
-			updateGlobalCollisionCoordinates(Scena[k]);
-			
-			glUniform1i(lsceltafs, Scena[k]->sceltaFS);
-			glUniformMatrix4fv(MatModel, 1, GL_FALSE, value_ptr(Scena[k]->Model));
-			glBindVertexArray(Scena[k]->VAO);
-			if (Scena[k]->hasHerm) {
-				glDrawArrays(GL_TRIANGLE_FAN, 0, Scena[k]->nvHer);
-			}else{
+				if (checkCollision(Scena[principalIndex], Scena[k])) {
+					Scena[principalIndex]->draw = false;
+				}
+				if (Scena[principalIndex]->draw) { //sposto solo se il personaggio principale e ancora vivo, altrimenti inutile aggiornare
+					nextEnemyMov(Scena[k], Scena[principalIndex]);
+					Scena[k]->AngoloRotazione = aggiornaAngolo(Scena[principalIndex]->vertex[0], Scena[principalIndex]->Model, Scena[k]->vertex[0], Scena[k]->Model);
+					Scena[k]->Model = mat4(1);
+					Scena[k]->Model = translate(Scena[k]->Model, Scena[k]->globalPos);
+					Scena[k]->Model = rotate(Scena[k]->Model, Scena[k]->AngoloRotazione, vec3(0.0, 0.0, 1.0));
+					Scena[k]->Model = scale(Scena[k]->Model, vec3(w / SCALE, h / SCALE, 1.0));
+					updateGlobalCollisionCoordinates(Scena[k]); // aggiorno la bounding box per ogni elemento dinamico(aereo)
+				}
+				glUniformMatrix4fv(MatModel, 1, GL_FALSE, value_ptr(Scena[k]->Model));
+				glUniform1i(lsceltafs, Scena[k]->sceltaFS);
+				glBindVertexArray(Scena[k]->VAO);
 
-				glDrawArrays(GL_TRIANGLE_FAN, 0, Scena[k]->nv);
-			}
-		
-		}
-		if(k>1) { //nemici
-			
-			
-			
-			if (Scena[principalIndex]->draw) { //sposto solo se il personaggio principale e ancora vivo
-				nextEnemyMov(Scena[k], Scena[principalIndex]);
-			}
-			Scena[k]->AngoloRotazione = aggiornaAngolo(Scena[principalIndex]->vertex[0], Scena[principalIndex]->Model, Scena[k]->vertex[0], Scena[k]->Model);
-			Scena[k]->Model = mat4(1);
-			Scena[k]->Model = translate(Scena[k]->Model, Scena[k]->globalPos);
-			Scena[k]->Model = rotate(Scena[k]->Model, Scena[k]->AngoloRotazione, vec3(0.0, 0.0, 1.0));
-			Scena[k]->Model = scale(Scena[k]->Model, vec3(w / SCALE, h / SCALE, 1.0));
-			glUniformMatrix4fv(MatModel, 1, GL_FALSE, value_ptr(Scena[k]->Model));
-			glUniform1i(lsceltafs, Scena[k]->sceltaFS);
-			glBindVertexArray(Scena[k]->VAO);
-			
-			if (Scena[k]->hasHerm) {
-				glDrawArrays(GL_TRIANGLE_FAN, 0, Scena[k]->nvHer);
-			}
-			else {
+				if (Scena[k]->hasHerm) {
+					glDrawArrays(GL_TRIANGLE_FAN, 0, Scena[k]->nvHer);
+				}
+				else {
 
-			glDrawArrays(GL_TRIANGLE_FAN, 0, Scena[k]->nv);
+					glDrawArrays(GL_TRIANGLE_FAN, 0, Scena[k]->nv);
+				}
 			}
-		}		
-		glBindVertexArray(0);
+			glBindVertexArray(0);
 
-		for (int k = 2; k < Scena.size(); k++)
-		{
-			if (checkCollision(Scena[1], Scena[k])) {
-				Scena[principalIndex]->draw = false;
-				cout << "colpito" << endl;
-			}
 		}
 	}
 	glutSwapBuffers();
@@ -322,6 +317,7 @@ void frame(int a) {
 	glutTimerFunc(60, frame, 0);
 }
 
+
 int main(int argc, char* argv[])
 {
 	glutInit(&argc, argv);
@@ -333,7 +329,7 @@ int main(int argc, char* argv[])
 	glutInitWindowPosition(100, 100);
 	glutCreateWindow("Elaborato Giuseppetti");
 	glutDisplayFunc(drawScene);
-
+	
 	//gestione animazione
 	glutKeyboardFunc(myKeyboard);
 	glutPassiveMotionFunc(seguiMouse);//chiama funzione per tutto il tempo in cui il mouse e sopra la finestra
